@@ -10,8 +10,8 @@
 // @match        https://www.transifex.com/*/translate/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @downloadURL  https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
-// @updateURL    https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
+// @downloadURL  https://raw.githubusercontent.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
+// @updateURL    https://raw.githubusercontent.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
 // ==/UserScript==
 /*original author: okrauss and script greasyfork.org/scripts/532223/Transifex%20Translator%20add-on.user.js  */
 /*modified by kid4rm90s to use gemini api key to translate using gemini fast models.*/
