@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.0.3
+// @version      1.0.4
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -10,11 +10,11 @@
 // @match        https://www.transifex.com/*/translate/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @require      https://greasyfork.org/scripts/560385/code/WazeToastr.js
-// @downloadURL 
-// @updateURL 
+// @downloadURL  https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
+// @updateURL    https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
 // ==/UserScript==
 /*original author: okrauss and script greasyfork.org/scripts/532223/Transifex%20Translator%20add-on.user.js  */
+/*modified by kid4rm90s to use gemini api key to translate using gemini fast models.*/
 (function() {
 
 GM_addStyle(`
