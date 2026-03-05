@@ -1457,9 +1457,24 @@ TXTR.DiffModern = {
 
         // Build contextual prompt for better translations
         // Build Nepali-specific contextual prompt (for English to Nepali)
+        getGeneralGuidelines(targetLang = 'the target language') {
+            return `GENERAL TRANSLATION GUIDELINES:
+1. Use consistent terminology throughout the translation.
+2. Maintain the same tone and style as the source text, appropriate for Waze navigation app localization.
+3. Ensure clarity and accuracy for navigation context (directions, places, actions).
+4. Keep translation length proportional to the original (concise and brief).
+5. Use idiomatic ${targetLang} expressions that sound natural to a native speaker.
+6. Preserve formatting: camelCase, numbers, punctuation, spacing, and special characters.
+7. IMPORTANT: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d, %1$s, <USER>) EXACTLY.
+   - Do NOT translate or modify placeholders.
+   - Do NOT translate URLs or attributes inside HTML tags.
+   - Place them in the translated sentence where they logically belong.
+8. No explanations, no quotation marks, no markdown - ONLY the translation.`;
+        },
+
         getNepaliGuidelines() {
             return `IMPORTANT FORMATTING RULES:
-- The text contains placeholders like {0}, {1}, {2}, etc., and formatting markers like %s, %d, or %1$s.
+- The text contains placeholders like <a>, <{>USER>, <>, etc., and formatting markers like %s, %d, or %1$s.
 - The text may also contain HTML tags like <a href="...">...</a> or <b>...</b>.
 - You MUST preserve these placeholders and tags EXACTLY as they are.
 - Do NOT translate attributes inside HTML tags (like href= URLs).
@@ -1500,7 +1515,6 @@ NEPALI-SPECIFIC GUIDELINES:
         },
 
         buildNepaliPrompt(text, lang) {
-            const isShort = text.length < 50;
             const isCamelCase = /[a-z][A-Z]/.test(text);
             const hasNumbers = /\d+/.test(text);
             const guidelines = this.getNepaliGuidelines();
@@ -1510,13 +1524,10 @@ NEPALI-SPECIFIC GUIDELINES:
 ${guidelines}`;
             
             if (isCamelCase) {
-                instructions += '\n11. IMPORTANT: Preserve camelCase if present in source';
+                instructions += '\n7. IMPORTANT: Preserve camelCase formatting if present';
             }
             if (hasNumbers) {
-                instructions += '\n12. Keep numeric patterns unchanged';
-            }
-            if (isShort) {
-                instructions += '\n13. This is a short string - keep translation concise and natural';
+                instructions += '\n8. Keep numbers and numeric patterns unchanged';
             }
             
             instructions += `\n\nText to translate:\n"${text}"`;
@@ -1540,9 +1551,9 @@ ${guidelines}`;
             };
             
             const targetLang = langNames[lang] || lang;
-            const isShort = text.length < 50;
             const isCamelCase = /[a-z][A-Z]/.test(text);
             const hasNumbers = /\d+/.test(text);
+            const guidelines = this.getGeneralGuidelines(targetLang);
             
             let instructions = `You are a professional translator specializing in Waze navigation app localization.
 
@@ -1551,23 +1562,13 @@ CONTEXT:
 - Target Language: ${targetLang}
 - Type: ${purpose === 'option' ? 'UI Option/Label' : purpose === 'instruction' ? 'User Instruction' : 'Navigation Message'}
 
-GUIDELINES:
-1. Maintain conciseness - preserve the original text length as much as possible
-2. Use formal/polite tone appropriate for ${targetLang} navigation context
-3. Preserve any formatting: camelCase, numbers, punctuation, spacing
-4. Preserve HTML tags (like <b>, <i>, <a href="...">), {0}, {1}, %s, %d and other placeholders - DO NOT translate or modify them
-5. Ensure clarity and accuracy for navigation contexts (directions, places, actions)
-6. Use terminology consistent with navigation apps
-7. NO explanations, NO quotation marks, NO markdown - ONLY the translation`;
+${guidelines}`;
 
             if (isCamelCase) {
-                instructions += '\n7. IMPORTANT: Preserve camelCase formatting if present';
+                instructions += '\n9. IMPORTANT: Preserve camelCase formatting if present';
             }
             if (hasNumbers) {
-                instructions += '\n8. Keep numbers and numeric patterns unchanged';
-            }
-            if (isShort) {
-                instructions += '\n9. This is a short string - keep translation concise and natural';
+                instructions += '\n10. Keep numbers and numeric patterns unchanged';
             }
             
             instructions += `\n\nText to translate:\n"${text}"`;
@@ -1720,6 +1721,7 @@ Return ONLY the refined translation in Nepali.`;
                 };
                 
                 const targetLang = langNames[lang] || lang;
+                const guidelines = this.getGeneralGuidelines(targetLang);
                 refinementPrompt = `You are a professional translator specializing in Waze navigation app localization.
 
 TASK: Refine and improve an existing translation for better quality and naturalness.
@@ -1731,16 +1733,9 @@ CURRENT TRANSLATION (${targetLang}):
 "${translatedText}"
 
 REFINEMENT GUIDELINES:
-1. Improve naturalness and idiomatic usage in ${targetLang}
-2. Ensure accuracy and clarity for navigation context
-3. Maintain original meaning and tone
-4. Keep the same length approximately
-5. Use appropriate formality level for a navigation app
-6. Preserve any formatting, numbers, or special characters
-7. Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d) - DO NOT translate or modify them
-8. Make it sound like a native ${targetLang} speaker wrote it
+${guidelines}
 
-Return ONLY the refined translation. NO explanations, NO quotation marks.`;
+Return ONLY the refined translation.`;
             }
             
             // Attempt refine with 1 retry on rate-limit
@@ -1881,6 +1876,7 @@ Return ONLY the refined translation. NO explanations, NO quotation marks.`;
             
             let contextualPrompt;
             if (lang === 'ne' || lang === 'nepali') {
+                const guidelines = this.getNepaliGuidelines();
                 // Nepali-specific context-aware prompt
                 contextualPrompt = `You are a professional translator specializing in Waze navigation app localization to Nepali (नेपाली).
 
@@ -1896,31 +1892,12 @@ SURROUNDING CONTEXT (for terminology and style consistency):`;
                     contextualPrompt += `\nFollowing string: "${nextText}"`;
                 }
                 
-                contextualPrompt += `\n\nNEPALI TRANSLATION GUIDELINES:
-1. Use consistent Nepali terminology with surrounding context
-2. Maintain the same tone and style appropriate for navigation app
-3. Apply correct Nepali grammar:
-   - Genitive particle: को (ko)
-   - Ergative particle: ले (le)
-   - Locative postposition: मा (ma)
-   - Proper verb conjugations (जानु, गर्नु, पुग्नु, आदि)
-4. Ensure clarity for Nepali navigation app users
-5. Keep translation length proportional to original
-6. Use idiomatic Nepali expressions appropriate for navigation
-7. Preserve formatting, numbers, and special characters
-8. IMPORTANT: Preserve placeholders and HTML tags EXACTLY. 
-   - These include <USER>, <b>,</b>, %s, %d, %1$s, and HTML like <a href="...">...</a>.
-   - Do NOT translate URLs inside tags.
-   - Example 1: "By continuing, you agree to <b>this process</b>" -> "अगाडि बढेर, तपाईं <b>यस प्रक्रिया</b>मा सहमत हुनुहुन्छ।"
-   - Example 2: "Check <a href='...'>email</a> for info" -> "जानकारीको लागि <a href='...'>इमेल</a> जाँच गर्नुहोस्"
-   - Example 3: "You won %s and %d points" -> "तपाईंले %s र %d अंक प्राप्त गर्नुभयो"
-9. Maintain proper Devanagari script with correct diacritical marks
-10. Sound natural, like a native Nepali speaker wrote it
+                contextualPrompt += `\n\n${guidelines}
 
 TEXT TO TRANSLATE (to Nepali):
 "${text}"
 
-Return ONLY the translation in Nepali. NO explanations, NO quotation marks.`;
+Return ONLY the translation in Nepali.`;
             } else {
                 const langNames = {
                     'he': 'Hebrew', 'es': 'Spanish', 'ru': 'Russian', 'ar': 'Arabic',
@@ -1932,6 +1909,7 @@ Return ONLY the translation in Nepali. NO explanations, NO quotation marks.`;
                 };
                 
                 const targetLang = langNames[lang] || lang;
+                const guidelines = this.getGeneralGuidelines(targetLang);
                 contextualPrompt = `You are a professional translator specializing in Waze navigation app localization.
 
 CONTEXT-AWARE TRANSLATION:
@@ -1946,20 +1924,12 @@ SURROUNDING CONTEXT (for consistency and tone):`;
                     contextualPrompt += `\nFollowing string: "${nextText}"`;
                 }
                 
-                contextualPrompt += `\n\nTRANSLATION GUIDELINES:
-1. Use consistent terminology with the surrounding context
-2. Maintain the same tone and style as previous/next strings
-3. Ensure clarity for navigation app users
-4. Keep translation length proportional to original
-5. Use idiomatic ${targetLang} expressions
-6. Preserve formatting, numbers, and special characters
-7. Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d) - DO NOT translate or modify them
-8. Sound natural, like a native ${targetLang} speaker
+                contextualPrompt += `\n\n${guidelines}
 
 TEXT TO TRANSLATE:
 "${text}"
 
-Return ONLY the translation. NO explanations, NO quotation marks.`;
+Return ONLY the translation.`;
             }
             
             try {
