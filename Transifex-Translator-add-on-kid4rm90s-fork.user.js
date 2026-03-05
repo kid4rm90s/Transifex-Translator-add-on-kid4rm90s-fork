@@ -12,8 +12,8 @@
 // @grant        GM_xmlhttpRequest
 // @run-at       document-idle
 // @require      https://greasyfork.org/scripts/560385/code/WazeToastr.js
-// @downloadURL  https://github.com/kid4rm90s/Transifex-Translator-add-on/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
-// @updateURL    https://github.com/kid4rm90s/Transifex-Translator-add-on/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
+// @downloadURL  https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
+// @updateURL    https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
 // ==/UserScript==
 /*original author: okrauss and script greasyfork.org/scripts/532223/Transifex%20Translator%20add-on.user.js  */
 (function() {
@@ -4611,7 +4611,7 @@ TXTR.Core.autoTranslate = function (force = false) {
     const updateMessage = 'A new version of Transifex Translator add-on is available. Please update to get the latest features and improvements.';
     const scriptName = GM_info.script.name;
     const scriptVersion = GM_info.script.version;
-    const downloadUrl = 'https://github.com/kid4rm90s/Transifex-Translator-add-on/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js';
+    const downloadUrl = 'https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js';
     const forumURL = 'https://github.com/kid4rm90s/Transifex-Translator-add-on';
 
 
