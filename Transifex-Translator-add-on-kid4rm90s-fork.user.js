@@ -1457,14 +1457,8 @@ TXTR.DiffModern = {
 
         // Build contextual prompt for better translations
         // Build Nepali-specific contextual prompt (for English to Nepali)
-        buildNepaliPrompt(text, lang) {
-            const isShort = text.length < 50;
-            const isCamelCase = /[a-z][A-Z]/.test(text);
-            const hasNumbers = /\d+/.test(text);
-            
-            let instructions = `You are a professional translator specializing in Waze navigation app localization to Nepali (नेपाली).
-
-IMPORTANT FORMATTING RULES:
+        getNepaliGuidelines() {
+            return `IMPORTANT FORMATTING RULES:
 - The text contains placeholders like {0}, {1}, {2}, etc., and formatting markers like %s, %d, or %1$s.
 - The text may also contain HTML tags like <a href="...">...</a> or <b>...</b>.
 - You MUST preserve these placeholders and tags EXACTLY as they are.
@@ -1494,13 +1488,26 @@ NEPALI-SPECIFIC GUIDELINES:
    - Road: सडक (sadak) or बाटो (bato)
    - Destination: गन्तव्य (gantabya)
    - Distance: दूरी (duri), Time: समय (samaya)
+   - Update: अद्यावधिक (adyabadhik) - do NOT use अपडेट
+   - Automatic: स्वचालित (swochalit) - do NOT use अटोमेटिक
+   - Set: हाल्नुहोस् (halnuhos) - do NOT use सेट गर्नुहोस्
 4. Preserve original meaning and conciseness - navigation prompts should be clear and brief.
 5. Use standard numerals unless the context specifically requires Devanagari numerals.
-6. Preserve HTML tags (<b>, {0}, %s, etc.) - DO NOT translate or modify them.
-7. Ensure correct spelling and Devanagari script usage.
-8. Avoid Hindi-influenced vocabulary (e.g., avoid "पहुँचो", "स्थान", "मन्जिल" if better Nepali alternatives exist).
-9. Sound like a natural native Nepali speaker.
-10. No explanations, no quotation marks - ONLY the translation.`;
+6. Avoid transliteration and Hindi-influenced vocabulary (e.g., avoid "पहुँचो", "मन्जिल" if better Nepali alternatives exist).
+7. Maintain correct Devanagari script and spelling.
+8. Sound like a natural native Nepali speaker.
+9. No explanations, no quotation marks - ONLY the translation.`;
+        },
+
+        buildNepaliPrompt(text, lang) {
+            const isShort = text.length < 50;
+            const isCamelCase = /[a-z][A-Z]/.test(text);
+            const hasNumbers = /\d+/.test(text);
+            const guidelines = this.getNepaliGuidelines();
+            
+            let instructions = `You are a professional translator specializing in Waze navigation app localization to Nepali (नेपाली).
+
+${guidelines}`;
             
             if (isCamelCase) {
                 instructions += '\n11. IMPORTANT: Preserve camelCase if present in source';
@@ -1665,6 +1672,7 @@ GUIDELINES:
 
         // Build Nepali-specific refinement prompt
         buildNepaliRefinementPrompt(sourceText, translatedText) {
+            const guidelines = this.getNepaliGuidelines();
             return `You are a professional translator specializing in Waze navigation app localization to Nepali (नेपाली).
 
 TASK: Refine and improve an existing Nepali translation for better quality and naturalness.
@@ -1675,17 +1683,7 @@ SOURCE TEXT (English):
 CURRENT TRANSLATION (नेपाली):
 "${translatedText}"
 
-NEPALI REFINEMENT GUIDELINES:
-1. Improve naturalness and idiomatic usage in professional Nepali.
-2. Verify correct grammar and syntax (e.g., को/का/की, ले, मा, लाई, जानुहोस्/गर्नुहोस्).
-3. Use appropriate register for a UI/Navigation context.
-4. Ensure accuracy for navigation terminology (e.g., दाहिने for Right, देब्रे for Left, सीधा for Straight).
-5. Avoid transliteration and Hindi-influenced words.
-6. Keep the same length approximately for UI consistency.
-7. Preserve HTML tags and placeholders ({0}, %s, etc.).
-8. Maintain correct Devanagari script and spelling.
-9. Sound natural to a native Nepali speaker.
-10. No explanations, no quotation marks - ONLY the refined Nepali translation.
+${guidelines}
 
 Return ONLY the refined translation in Nepali.`;
         },
@@ -2038,9 +2036,15 @@ Return ONLY the translation. NO explanations, NO quotation marks.`;
                             break;
                         case 'hybrid':
                             console.log(`[TXTR] Engine selected: Hybrid`, { lang });
-                            // First translate with Google, then refine with Gemini
+                            // First translate with Google, then refine with Gemini only if longer than 3 words
                             const googleTranslation = await this.translateOne(runs[i].value, lang);
-                            translated = await this.refineWithGemini(runs[i].value, googleTranslation, lang);
+                            const wordCount = runs[i].value.trim().split(/\s+/).length;
+                            if (wordCount > 3) {
+                                translated = await this.refineWithGemini(runs[i].value, googleTranslation, lang);
+                            } else {
+                                translated = googleTranslation;
+                                console.log(`[TXTR] Hybrid: skipping refinement (${wordCount} words ≤ 3)`, { lang, source: runs[i].value, translated });
+                            }
                             break;
                         case 'google':
                         default:
@@ -3533,11 +3537,27 @@ this.elements.useBtn = useBtn;
                 style: 'display:flex;justify-content:space-between;align-items:center;'
             });
             
-            const tokenCount = TXTR.DOM.createElement('span', {
-                textContent: `${TXTR.UILang.get('TOTAL_TOKENS')} ${TXTR.Storage.get('geminiTotalTokens') || '0'}`,
+            const tokenLabel = TXTR.DOM.createElement('span', {
+                textContent: TXTR.UILang.get('TOTAL_TOKENS'),
                 style: 'font-size:13px;color:var(--txtr-text-alt);'
             });
-            tokenContent.appendChild(tokenCount);
+            const tokenValue = TXTR.DOM.createElement('span', {
+                textContent: TXTR.Storage.get('geminiTotalTokens') || '0',
+                style: 'font-size:13px;font-weight:600;color:var(--txtr-text);margin-left:4px;'
+            });
+            
+            const tokenTextContainer = TXTR.DOM.createElement('div');
+            tokenTextContainer.appendChild(tokenLabel);
+            tokenTextContainer.appendChild(tokenValue);
+            tokenContent.appendChild(tokenTextContainer);
+            
+            // Auto-refresh token count every 1 second while modal is open
+            const tokenRefreshInterval = setInterval(() => {
+                const currentTokens = TXTR.Storage.get('geminiTotalTokens') || '0';
+                if (tokenValue.textContent !== currentTokens) {
+                    tokenValue.textContent = currentTokens;
+                }
+            }, 1000);
             
             const resetBtn = TXTR.DOM.createElement('button', {
                 textContent: TXTR.UILang.get('RESET_TOKENS'),
@@ -3545,11 +3565,18 @@ this.elements.useBtn = useBtn;
             });
             resetBtn.onclick = () => {
                 TXTR.Storage.set('geminiTotalTokens', '0');
-                tokenCount.textContent = `${TXTR.UILang.get('TOTAL_TOKENS')} 0`;
+                tokenValue.textContent = '0';
             };
             tokenContent.appendChild(resetBtn);
             tokenSection.appendChild(tokenContent);
             modal.appendChild(tokenSection);
+            
+            // Clean up interval when modal closes
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay && overlay.style.display !== 'none') {
+                    clearInterval(tokenRefreshInterval);
+                }
+            }, { once: true });
             
             // Save button
             const buttonRow = TXTR.DOM.createElement('div', { style: 'display:flex;gap:8px;margin-top:20px;' });
@@ -3560,6 +3587,7 @@ this.elements.useBtn = useBtn;
             });
             
             saveBtn.onclick = () => {
+                clearInterval(tokenRefreshInterval);
                 const oldApiKey = TXTR.Storage.get('geminiApiKey');
                 const newApiKey = apiKeyInput.value;
                 
@@ -3591,7 +3619,10 @@ this.elements.useBtn = useBtn;
                 textContent: TXTR.UILang.get('CLOSE'),
                 style: 'padding:10px 16px;background:var(--txtr-border);color:var(--txtr-text);border:none;border-radius:4px;cursor:pointer;'
             });
-            closeBtn.onclick = () => overlay.remove();
+            closeBtn.onclick = () => {
+                clearInterval(tokenRefreshInterval);
+                overlay.remove();
+            };
             buttonRow.appendChild(closeBtn);
             
             modal.appendChild(buttonRow);
