@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.0.8
+// @version      1.0.9
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1503,8 +1503,12 @@ NEPALI-SPECIFIC GUIDELINES:
    - Update: अद्यावधिक (adyabadhik) - do NOT use अपडेट
    - Automatic: स्वचालित (swochalit) - do NOT use अटोमेटिक
    - Set: हाल्नुहोस् (halnuhos) - do NOT use सेट गर्नुहोस्
-4. Preserve original meaning and conciseness - navigation prompts should be clear and brief.
-5. Use standard numerals unless the context specifically requires Devanagari numerals.
+   - Settings: सेटिङस् (setings)
+   - Location Services: स्थान सेवाहरू (sthan sewaharu)
+   - iPhone: आईफोन (iPhone)
+4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
+5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
+6. Use standard numerals unless the context specifically requires Devanagari numerals.
 6. Avoid transliteration and Hindi-influenced vocabulary (e.g., avoid "पहुँचो", "मन्जिल" if better Nepali alternatives exist).
 7. Maintain correct Devanagari script and spelling.
 8. Sound like a natural native Nepali speaker.
@@ -1983,45 +1987,50 @@ Return ONLY the translation.`;
         // Main translation function with token preservation and engine selection
         async translateText(text, lang) {
             console.log(`[TXTR] Sending to translate (${lang}):`, text);
-            const runs = this.splitRuns(text);
-            this.state.hasPlaceholders = runs.some(r => r.type === 'token');
-
+            
             const engine = TXTR.Storage.get('translationEngine') || 'google';
+            const useContext = TXTR.Storage.get('useContextAware') === '1';
+
+            // Check for placeholders for state management
+            this.MASTER_TOKEN.lastIndex = 0;
+            this.state.hasPlaceholders = this.MASTER_TOKEN.test(text);
+
+            // SPECIAL CASE: For Gemini and Hybrid engines, we MUST NOT split the string by tags.
+            // Fragmenting a sentence (e.g., "Go to <b>Settings</b>") into ["Go to ", "<b>", "Settings", "</b>"]
+            // destroys context and word order, which is critical for languages like Nepali.
+            if (engine === 'gemini' || engine === 'hybrid') {
+                console.log(`[TXTR] Using ${engine} engine on full string to preserve context and word order.`);
+                
+                let translated;
+                switch(engine) {
+                    case 'gemini':
+                        translated = useContext 
+                            ? await this.translateWithContext(text, lang)
+                            : await this.translateWithGemini(text, lang);
+                        break;
+                    case 'hybrid':
+                        // Hybrid: Google for speed, Gemini for refinement
+                        const googleTranslation = await this.translateOne(text, lang);
+                        const wordCount = text.trim().split(/\s+/).length;
+                        if (wordCount > 3) {
+                            translated = await this.refineWithGemini(text, googleTranslation, lang);
+                        } else {
+                            translated = googleTranslation;
+                        }
+                        break;
+                }
+                
+                console.log(`[TXTR] Final joined translation:`, translated);
+                return translated;
+            }
+
+            // LEGACY: Split into runs only for basic Google engine or when necessary
+            const runs = this.splitRuns(text);
             
             for (let i = 0; i < runs.length; i++) {
                 if (runs[i].type === 'text') {
                     console.log(`[TXTR] Run ${i+1}/${runs.length} (Type: text):`, runs[i].value);
-                    let translated;
-                    const useContext = TXTR.Storage.get('useContextAware') === '1';
-                    const prevText = i > 0 ? runs[i-1].value : '';
-                    const nextText = i < runs.length - 1 ? runs[i+1].value : '';
-                    
-                    switch(engine) {
-                        case 'gemini':
-                            console.log(`[TXTR] Engine selected: Gemini`, { lang, useContext });
-                            translated = useContext 
-                                ? await this.translateWithContext(runs[i].value, lang, prevText, nextText)
-                                : await this.translateWithGemini(runs[i].value, lang);
-                            break;
-                        case 'hybrid':
-                            console.log(`[TXTR] Engine selected: Hybrid`, { lang });
-                            // First translate with Google, then refine with Gemini only if longer than 3 words
-                            const googleTranslation = await this.translateOne(runs[i].value, lang);
-                            const wordCount = runs[i].value.trim().split(/\s+/).length;
-                            if (wordCount > 3) {
-                                translated = await this.refineWithGemini(runs[i].value, googleTranslation, lang);
-                            } else {
-                                translated = googleTranslation;
-                                console.log(`[TXTR] Hybrid: skipping refinement (${wordCount} words ≤ 3)`, { lang, source: runs[i].value, translated });
-                            }
-                            break;
-                        case 'google':
-                        default:
-                            console.log(`[TXTR] Engine selected: Google`, { lang });
-                            translated = await this.translateOne(runs[i].value, lang);
-                    }
-                    
-                    runs[i].value = translated;
+                    runs[i].value = await this.translateOne(runs[i].value, lang);
                 } else if (runs[i].type === 'token') {
                     console.log(`[TXTR] Run ${i+1}/${runs.length} (Type: token - skipped):`, runs[i].value);
                 }
@@ -2065,60 +2074,31 @@ Return ONLY the translation.`;
         injectTransifexTranslation(targetEl, translatedHtml) {
             if (!targetEl) return;
             
-            // 1. Check if the target previously had tx-placeholders or if we need to reconstruct them
-            // We'll create a temporary map of the original placeholders from the source
-            const srcEl = TXTR.DOM.findSourceTextArea();
-            if (!srcEl) return;
+            // Set focus to the Transifex editor
+            targetEl.focus();
 
-            const placeholders = Array.from(srcEl.querySelectorAll('tx-placeholder'));
-            if (placeholders.length === 0) {
-                targetEl.innerHTML = translatedHtml;
-                return;
-            }
-
-            // 2. We need to match the HTML tags in translatedHtml back to tx-placeholder elements
-            // This is complex because we converted placeholders to raw tags for translation.
-            // Simplified approach for Transifex: Replace the inner content but preserve the placeholder markers if they exist.
-            // If the targetEl is a contenteditable div used by Transifex, it expects tx-placeholder nodes.
-            
-            let finalContent = translatedHtml;
-            
-            // Collect mapping of raw tag strings to their placeholder objects
-            const tagMap = new Map();
-            placeholders.forEach(ph => {
-                const rawTag = ph.getAttribute('data-original-title')
-                    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-                if (!tagMap.has(rawTag)) {
-                    tagMap.set(rawTag, []);
-                }
-                tagMap.get(rawTag).push(ph.outerHTML);
-            });
-
-            // For each unique raw tag, replace occurrences with placeholders from our pool
-            tagMap.forEach((phPool, rawTag) => {
-                // Ignore very short strings that aren't clearly placeholders to avoid character-level injection
-                // If it doesn't contain a space and isn't a known placeholder type, it might be dangerous
-                const isLikelyPlaceholder = /[%_]/.test(rawTag) || rawTag.length > 3;
-                if (!isLikelyPlaceholder) return;
-
-                // Escape regex special chars
-                const escapedTag = rawTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            try {
+                // Clear existing content
+                document.execCommand('selectAll', false, null);
+                document.execCommand('delete', false, null);
                 
-                // Use strict word boundaries for alphanumeric tags, or check for space/start/end
-                // This prevents 'Home' from matching inside 'घर' (which contains internal Unicode sequences)
-                const regex = new RegExp(`(^|\\s|[^\\w\\d])${escapedTag}($|\\s|[^\\w\\d])`, 'g');
+                // Transifex's Draft.js editor parses plain text containing HTML tags and
+                // automatically converts them to <tx-placeholder> (the "1", "2" bubble UIs).
+                // We paste it as plain text to trigger this internal auto-parsing.
+                const dataTransfer = new DataTransfer();
+                dataTransfer.setData('text/plain', translatedHtml);
                 
-                let poolIndex = 0;
-                finalContent = finalContent.replace(regex, (match, p1, p2) => {
-                    // Use next available placeholder from pool, or fall back to last one if exceeded
-                    const replacement = phPool[poolIndex] || phPool[phPool.length - 1];
-                    poolIndex++;
-                    // Preserve the surrounding characters captures by p1 and p2
-                    return p1 + replacement + p2;
+                const pasteEvent = new ClipboardEvent('paste', {
+                    bubbles: true,
+                    cancelable: true,
+                    clipboardData: dataTransfer
                 });
-            });
-
-            targetEl.innerHTML = finalContent;
+                
+                targetEl.dispatchEvent(pasteEvent);
+            } catch(e) {
+                console.warn('[TXTR] Paste injection failed, falling back', e);
+                targetEl.innerText = translatedHtml;
+            }
         },
 
         // AutoTranslate the source string
