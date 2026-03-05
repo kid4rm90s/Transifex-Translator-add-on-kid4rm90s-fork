@@ -9,11 +9,10 @@
 // @match        https://app.transifex.com/*/translate/*
 // @match        https://www.transifex.com/*/translate/*
 // @grant        GM_addStyle
-// @grant        GM_xmlhttpRequest
 // @run-at       document-idle
 // @require      https://greasyfork.org/scripts/560385/code/WazeToastr.js
-// @downloadURL  https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
-// @updateURL    https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
+// @downloadURL 
+// @updateURL 
 // ==/UserScript==
 /*original author: okrauss and script greasyfork.org/scripts/532223/Transifex%20Translator%20add-on.user.js  */
 (function() {
@@ -4606,37 +4605,6 @@ TXTR.Core.autoTranslate = function (force = false) {
     const box = document.querySelector('.txtr-diff-box');
     if (box) box.textContent = 'Comparison';
 })();
-
-    // --- Script Update Monitor ---
-    const updateMessage = 'A new version of Transifex Translator add-on is available. Please update to get the latest features and improvements.';
-    const scriptName = GM_info.script.name;
-    const scriptVersion = GM_info.script.version;
-    const downloadUrl = 'https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/raw/refs/heads/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js';
-    const forumURL = 'https://github.com/kid4rm90s/Transifex-Translator-add-on';
-
-
-    function scriptupdatemonitor() {
-        if (WazeToastr?.Ready) {
-            // Create and start the ScriptUpdateMonitor
-            const updateMonitor = new WazeToastr.Alerts.ScriptUpdateMonitor(
-                scriptName,
-                scriptVersion,
-                downloadUrl,
-                GM_xmlhttpRequest,
-                downloadUrl, // metaUrl - for GitHub, use the same URL as it contains the @version tag
-                /@version\s+(.+)/i // metaRegExp - extracts version from @version tag
-            );
-            updateMonitor.start(2, true); // Check every 2 hours, check immediately
-
-            // Show the update dialog for the current version
-            WazeToastr.Interface.ShowScriptUpdate(scriptName, scriptVersion, updateMessage, downloadUrl, forumURL);
-        } else {
-            setTimeout(scriptupdatemonitor, 250);
-        }
-    }
-    
-    // Start the update monitor
-    scriptupdatemonitor();
 
 
 })();
