@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.1.1
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1318,7 +1318,8 @@ TXTR.DiffModern = {
             hasPlaceholders: false,
             lastTokensUsed: 0,
             autoTranslateTimeout: null,
-            autoTranslateDebounceMs: 800
+            autoTranslateDebounceMs: 450,
+            lastExtractedSourceText: ''  // Cache to detect actual text changes vs DOM-only changes
         },
 
         // Token patterns for preserving placeholders (from v2.17)
@@ -1508,6 +1509,9 @@ NEPALI-SPECIFIC GUIDELINES:
    - Settings: सेटिङस् (setings)
    - Location Services: स्थान सेवाहरू (sthan sewaharu)
    - iPhone: आईफोन (iPhone)
+   - Android: एन्ड्रोइड (Android)
+   -Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
+   -Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
 4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
 6. Use standard numerals unless the context specifically requires Devanagari numerals.
@@ -1619,7 +1623,7 @@ ${guidelines}`;
                 return this.translateOne(text, lang);
             }
             
-            const model = TXTR.Storage.get('geminiModel') || 'gemini-1.5-flash';
+            const model = TXTR.Storage.get('geminiModel') || 'gemini-3.1-flash-lite-preview';
             const maskedKey = this.maskApiKey(apiKey);
             const contextualPrompt = this.buildContextualPrompt(text, lang);
             
@@ -1706,7 +1710,7 @@ Return ONLY the refined translation in Nepali.`;
                 return translatedText;
             }
             
-            const model = TXTR.Storage.get('geminiModel') || 'gemini-1.5-flash';
+            const model = TXTR.Storage.get('geminiModel') || 'gemini-3.1-flash-lite-preview';
             const maskedKey = this.maskApiKey(apiKey);
             
             // Use Nepali-specific prompt for Nepali
@@ -1874,7 +1878,7 @@ Return ONLY the refined translation.`;
                 return this.translateOne(text, lang);
             }
             
-            const model = TXTR.Storage.get('geminiModel') || 'gemini-1.5-flash';
+            const model = TXTR.Storage.get('geminiModel') || 'gemini-3.1-flash-lite-preview';
             const maskedKey = this.maskApiKey(apiKey);
             
             let contextualPrompt;
@@ -2014,7 +2018,7 @@ Return ONLY the translation.`;
                         // Hybrid: Google for speed, Gemini for refinement
                         const googleTranslation = await this.translateOne(text, lang);
                         const wordCount = text.trim().split(/\s+/).length;
-                        if (wordCount > 3) {
+                        if (wordCount > 2) { // Only refine longer strings where context matters
                             translated = await this.refineWithGemini(text, googleTranslation, lang);
                         } else {
                             translated = googleTranslation;
@@ -2133,10 +2137,17 @@ Return ONLY the translation.`;
             const srcText = this.sanitizeText(this.extractSourceText(srcEl).trim());
             if (!srcText) return;
 
+            // Skip if extracted text hasn't actually changed (prevents retranslation for DOM-only mutations)
+            if (!force && srcText === this.state.lastExtractedSourceText) {
+                console.log('[TXTR] Source text unchanged from cache, skipping translation request.');
+                return;
+            }
+
             // check if target already has text - double check length
             const initialTargetText = (tgtEl.value !== undefined ? tgtEl.value.trim() : (tgtEl.innerText || "").trim());
             if (initialTargetText.length > 0 && !force) {
                 this.state.lastSourceText = srcText;
+                this.state.lastExtractedSourceText = srcText;  // Update cache
                 TXTR.Preview.update();
                 return;
             }
@@ -2175,6 +2186,7 @@ Return ONLY the translation.`;
                 // Lock to prevent duplicate requests from multiple MutationObserver triggers
                 this.state.isTranslating = true;
                 this.state.lastSourceText = currentSrcText;
+                this.state.lastExtractedSourceText = currentSrcText;  // Update cache with confirmed extraction
                 // Store original source for safety check comparison (avoids re-extraction from changing DOM)
                 const originalSrcText = currentSrcText;
                 TXTR.UI.setStatus('STATUS_TRANSLATING');
@@ -2747,7 +2759,7 @@ setupDraftHeightSync() {
 
             if (srcEl && !this.sourceObserver) {
                 this.sourceObserver = new MutationObserver(
-                    TXTR.Utils.debounce(() => TXTR.Core.autoTranslate(), 300)
+                    TXTR.Utils.debounce(() => TXTR.Core.autoTranslate(), 400)
                 );
                 this.sourceObserver.observe(srcEl, {
                     childList: true,
