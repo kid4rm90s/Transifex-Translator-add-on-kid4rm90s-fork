@@ -1465,52 +1465,35 @@ TXTR.DiffModern = {
 4. Keep translation length proportional to the original (concise and brief).
 5. Use idiomatic ${targetLang} expressions that sound natural to a native speaker.
 6. Preserve formatting: camelCase, numbers, punctuation, spacing, and special characters.
-7. IMPORTANT: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders %s, %d, %1$s, <USER>) EXACTLY.
-   - Do NOT translate or modify placeholders.
-   - Do NOT translate URLs or attributes inside HTML tags.
-   - Place them in the translated sentence where they logically belong.
+7. CRITICAL: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d, %1$s, <USER>) EXACTLY.
+   - You MUST wrap the translated text with the SAME HTML tags as the source.
+   - Do NOT remove, translate, or modify tags or placeholders.
+   - Do NOT translate URLs, attributes, or text inside attributes (like href, title, etc.).
+   - Place them in the translated sentence where they logically belong to wrap or represent the same concepts as the source.
+   - Example (HTML): "<a href='%s'>Forgot password?</a>" -> "<a href='%s'>पासवर्ड बिर्सनुभयो?</a>"
+   - Example (Placeholder): "Check %s now" -> "%s अब जाँच गर्नुहोस्"
 8. No explanations, no quotation marks, no markdown - ONLY the translation.`;
         },
 
         getNepaliGuidelines() {
-            return `IMPORTANT FORMATTING RULES:
-- The text contains placeholders like <a>, <{>USER>, <>, etc., and formatting markers like %s, %d, or %1$s.
-- The text may also contain HTML tags like <a href="...">...</a> or <b>...</b>.
-- You MUST preserve these placeholders and tags EXACTLY as they are.
-- Do NOT translate attributes inside HTML tags (like href= URLs).
-- Do NOT modify, remove, or translate %s, %d, etc.
-- Place them in the translated sentence where they logically belong to wrap or represent the same concepts as the source text.
-- Example 1: "Won %s points" -> "%s अंक प्राप्त भयो"
-- Example 2: "subject to <a href='...'>Privacy Policy</a>" -> "<a href='...'>गोपनीयता नीति</a> को अधीनमा"
+            const general = this.getGeneralGuidelines('Nepali (नेपाली)');
+            return `${general}
 
 NEPALI-SPECIFIC GUIDELINES:
-1. Use professional and polite register (तपाईं) appropriate for a navigation app.
-2. Maintain correct Nepali grammar and syntax:
+1. Use professional and polite register (तपाईं) appropriate for specialized localization.
+2. Maintain correct Nepali grammar:
    - Genitive: को (ko), का (ka), की (ki)
    - Ergative: ले (le)
    - Locative: मा (ma)
    - Dative: लाई (lai)
    - Proper verb conjugations (e.g., जानुहोस्, गर्नुहोस्, पुग्नुहुनेछ).
 3. Use standard Nepali navigation terminology:
-   - Turn right: दाहिने मोडिनुहोस् (dahine modinuhos)
-   - Turn left: देब्रे मोडिनुहोस् (debre modinuhos)
-   - Go straight: सीधा जानुहोस् (sidha januhos)
-   - Direction: दिशा (disha)
-   - Turn (noun): मोड (mod)
-   - Turn (verb): मोडिनु (modinu)
-   - North: उत्तर (uttar), South: दक्षिण (dakshin), East: पूर्व (purba), West: पश्चिम (pashchim)
-   - Road: सडक (sadak) or बाटो (bato)
-   - Destination: गन्तव्य (gantabya)
-   - Distance: दूरी (duri), Time: समय (samaya)
-   - Update: अद्यावधिक (adyabadhik) - do NOT use अपडेट
-   - Automatic: स्वचालित (swochalit) - do NOT use अटोमेटिक
-   - Set: हाल्नुहोस् (halnuhos) - do NOT use सेट गर्नुहोस्
-4. Preserve original meaning and conciseness - navigation prompts should be clear and brief.
-5. Use standard numerals unless the context specifically requires Devanagari numerals.
-6. Avoid transliteration and Hindi-influenced vocabulary (e.g., avoid "पहुँचो", "मन्जिल" if better Nepali alternatives exist).
-7. Maintain correct Devanagari script and spelling.
-8. Sound like a natural native Nepali speaker.
-9. No explanations, no quotation marks - ONLY the translation.`;
+   - Turn right: दाहिने मोडिनुहोस्, Turn left: देब्रे मोडिनुहोस्
+   - Go straight: सीधा जानुहोस्, Destination: गन्तव्य
+   - Update: अद्यावधिक (do NOT use अपडेट), Automatic: स्वचालित (do NOT use अटोमेटिक)
+4. Use standard numerals unless the context specifically requires Devanagari numerals.
+5. Avoid transliteration and Hindi-influenced vocabulary.
+6. Maintain correct Devanagari script and spelling.`;
         },
 
         buildNepaliPrompt(text, lang) {
