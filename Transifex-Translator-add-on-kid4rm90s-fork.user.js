@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.0.9
+// @version      1.1.0
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1316,13 +1316,15 @@ TXTR.DiffModern = {
             lastSourceText: '',
             lastTranslation: '',
             hasPlaceholders: false,
-            lastTokensUsed: 0
+            lastTokensUsed: 0,
+            autoTranslateTimeout: null,
+            autoTranslateDebounceMs: 800
         },
 
         // Token patterns for preserving placeholders (from v2.17)
         TOKEN_PATTERNS: {
             BBCODE: /\[\/?(?:link|b|i|u|\/?id=\d*)?\]|<\/?br\/?>/gi,
-            PERCENT: /%[a-zA-Z0-9_]+%/g,
+            PERCENT: /%[a-zA-Z0-9_]+%|%s/g,
             ANGLE: /<[^>]+>/g,
             UNDERSCORE: /_(?:p|ph|ph\d+)_/gi
         },
@@ -2057,11 +2059,20 @@ Return ONLY the translation.`;
                         return;
                     }
 
-                    const originalAttr = ph.getAttribute('data-original-title');
-                    if (originalAttr) {
-                        // Decode HTML entities (e.g., &lt; to <)
-                        const decoded = originalAttr.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-                        ph.replaceWith(decoded);
+                    // Try data-variable-content first (stores the actual placeholder like %s)
+                    let content = ph.getAttribute('data-variable-content');
+                    if (!content) {
+                        // Fall back to data-original-title for other placeholder types
+                        content = ph.getAttribute('data-original-title');
+                        if (content) {
+                            // Decode HTML entities (e.g., &lt; to <)
+                            content = content.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+                        }
+                    }
+                    
+                    // If we found placeholder content, use it; otherwise keep the text
+                    if (content) {
+                        ph.replaceWith(content);
                     }
                 });
                 return clone.innerText || clone.textContent || '';
@@ -2130,60 +2141,92 @@ Return ONLY the translation.`;
                 return;
             }
 
-            // Lock to prevent duplicate requests from multiple MutationObserver triggers
-            this.state.isTranslating = true;
-            this.state.lastSourceText = srcText;
-            TXTR.UI.setStatus('STATUS_TRANSLATING');
+            // Debounce: Cancel previous pending translation if source changed
+            if (this.state.autoTranslateTimeout) {
+                clearTimeout(this.state.autoTranslateTimeout);
+                console.log('[TXTR] Debouncing: Source text detected as changed, cancelling previous translation request.');
+            }
 
-            try {
-                const translated = await this.translateText(srcText, this.state.targetLang);
+            // Debounce translation request to avoid cascading translations when source rapidly changes
+            this.state.autoTranslateTimeout = setTimeout(async () => {
+                this.state.autoTranslateTimeout = null;
                 
-                // Final safety check: ensuring source hasn't changed while we were waiting for API
+                // Re-check if still relevant after debounce delay
                 const currentSrcEl = TXTR.DOM.findSourceTextArea();
-                const currentSrcText = currentSrcEl ? this.sanitizeText(this.extractSourceText(currentSrcEl).trim()) : '';
+                if (!currentSrcEl) return;
+                let currentSrcText = this.sanitizeText(this.extractSourceText(currentSrcEl).trim());
                 
                 if (currentSrcText !== srcText) {
-                    console.log('[TXTR] Source changed during translation, discarding result.', { expected: srcText, current: currentSrcText });
-                    return;
-                }
-
-                this.state.lastTranslation = translated;
-                
-                // Re-find element just in case DOM refreshed
-                const activeTgtEl = TXTR.DOM.findTranslationTextArea();
-                if (activeTgtEl) {
-                    console.log(`[TXTR] Setting translation to target element:`, { tagName: activeTgtEl.tagName, translated });
-                    if (activeTgtEl.tagName === 'TEXTAREA') {
-                        activeTgtEl.value = translated;
-                        activeTgtEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    // Check if original had placeholders but current doesn't - indicates Transifex expanded them
+                    const originalHasPlaceholders = /(%[\w]+%|%s)/g.test(srcText);
+                    const currentHasPlaceholders = /(%[\w]+%|%s)/g.test(currentSrcText);
+                    
+                    if (originalHasPlaceholders && !currentHasPlaceholders) {
+                        // Source was expanded from placeholder form (e.g., %s -> Ctrl+Alt+1) - use original
+                        console.log('[TXTR] Source was expanded by Transifex UI (placeholder → expanded), using original placeholder version.', { original: srcText, expanded: currentSrcText });
+                        currentSrcText = srcText; // Override: use original preserved version
                     } else {
-                        // For Transifex divs, we must convert raw tags back into <tx-placeholder> nodes
-                        this.injectTransifexTranslation(activeTgtEl, translated);
-                        activeTgtEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        // Genuine source change (user edited) - requeue with new source
+                        console.log('[TXTR] Source genuinely changed by user, queuing translation with new source.', { original: srcText, current: currentSrcText });
+                        return this.autoTranslate(force);
                     }
-                    console.log(`[TXTR] Translation set successfully (with placeholder reconstruction).`);
                 }
+                
+                // Lock to prevent duplicate requests from multiple MutationObserver triggers
+                this.state.isTranslating = true;
+                this.state.lastSourceText = currentSrcText;
+                // Store original source for safety check comparison (avoids re-extraction from changing DOM)
+                const originalSrcText = currentSrcText;
+                TXTR.UI.setStatus('STATUS_TRANSLATING');
 
-                TXTR.UI.setStatus('STATUS_SUCCESS');
-                
-                // Show token usage if Gemini was used
-                if (TXTR.Core.state.lastTokensUsed > 0) {
-                    const statusEl = document.querySelector('.txtr-status');
-                    if (statusEl) {
-                        statusEl.textContent += ` (${TXTR.Core.state.lastTokensUsed} tokens)`;
-                        TXTR.Core.state.lastTokensUsed = 0; // Reset for next time
+                try {
+                    const translated = await this.translateText(currentSrcText, this.state.targetLang);
+                    
+                    // Final safety check: ensuring source hasn't changed while we were waiting for API
+                    // Use the STORED original source text, not a fresh extraction (DOM may have changed)
+                    if (originalSrcText && this.state.lastSourceText !== originalSrcText) {
+                        console.log('[TXTR] Source changed during translation, discarding result.', { expected: originalSrcText, current: this.state.lastSourceText });
+                        return;
                     }
+
+                    this.state.lastTranslation = translated;
+                    
+                    // Re-find element just in case DOM refreshed
+                    const activeTgtEl = TXTR.DOM.findTranslationTextArea();
+                    if (activeTgtEl) {
+                        console.log(`[TXTR] Setting translation to target element:`, { tagName: activeTgtEl.tagName, translated });
+                        if (activeTgtEl.tagName === 'TEXTAREA') {
+                            activeTgtEl.value = translated;
+                            activeTgtEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        } else {
+                            // For Transifex divs, we must convert raw tags back into <tx-placeholder> nodes
+                            this.injectTransifexTranslation(activeTgtEl, translated);
+                            activeTgtEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        console.log(`[TXTR] Translation set successfully (with placeholder reconstruction).`);
+                    }
+
+                    TXTR.UI.setStatus('STATUS_SUCCESS');
+                    
+                    // Show token usage if Gemini was used
+                    if (TXTR.Core.state.lastTokensUsed > 0) {
+                        const statusEl = document.querySelector('.txtr-status');
+                        if (statusEl) {
+                            statusEl.textContent += ` (${TXTR.Core.state.lastTokensUsed} tokens)`;
+                            TXTR.Core.state.lastTokensUsed = 0; // Reset for next time
+                        }
+                    }
+                    
+                    TXTR.Preview.update();
+                    TXTR.Draft.setBaseline(this.sanitizeText(translated));
+                } catch (e) {
+                    console.error('[TXTR] Auto-translate error:', e);
+                    TXTR.UI.setStatus('STATUS_ERROR');
+                } finally {
+                    this.state.isTranslating = false;
+                    setTimeout(() => TXTR.UI.clearStatus(), 2000);
                 }
-                
-                TXTR.Preview.update();
-                TXTR.Draft.setBaseline(this.sanitizeText(translated));
-            } catch (e) {
-                console.error('[TXTR] Auto-translate error:', e);
-                TXTR.UI.setStatus('STATUS_ERROR');
-            } finally {
-                this.state.isTranslating = false;
-                setTimeout(() => TXTR.UI.clearStatus(), 2000);
-            }
+            }, this.state.autoTranslateDebounceMs);
         }
     };
 
