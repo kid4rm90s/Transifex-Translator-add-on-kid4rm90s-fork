@@ -1465,7 +1465,7 @@ TXTR.DiffModern = {
 4. Keep translation length proportional to the original (concise and brief).
 5. Use idiomatic ${targetLang} expressions that sound natural to a native speaker.
 6. Preserve formatting: camelCase, numbers, punctuation, spacing, and special characters.
-7. IMPORTANT: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d, %1$s, <USER>) EXACTLY.
+7. IMPORTANT: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders %s, %d, %1$s, <USER>) EXACTLY.
    - Do NOT translate or modify placeholders.
    - Do NOT translate URLs or attributes inside HTML tags.
    - Place them in the translated sentence where they logically belong.
@@ -1478,11 +1478,10 @@ TXTR.DiffModern = {
 - The text may also contain HTML tags like <a href="...">...</a> or <b>...</b>.
 - You MUST preserve these placeholders and tags EXACTLY as they are.
 - Do NOT translate attributes inside HTML tags (like href= URLs).
-- Do NOT modify, remove, or translate %s, %d, {0}, etc.
+- Do NOT modify, remove, or translate %s, %d, etc.
 - Place them in the translated sentence where they logically belong to wrap or represent the same concepts as the source text.
-- Example 1: "Click {0}here{0}" -> "{0}यहाँ{0} क्लिक गर्नुहोस्"
-- Example 2: "Won %s points" -> "%s अंक प्राप्त भयो"
-- Example 3: "subject to <a href='...'>Privacy Policy</a>" -> "<a href='...'>गोपनीयता नीति</a> को अधीनमा"
+- Example 1: "Won %s points" -> "%s अंक प्राप्त भयो"
+- Example 2: "subject to <a href='...'>Privacy Policy</a>" -> "<a href='...'>गोपनीयता नीति</a> को अधीनमा"
 
 NEPALI-SPECIFIC GUIDELINES:
 1. Use professional and polite register (तपाईं) appropriate for a navigation app.
