@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.5
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1909,9 +1909,9 @@ SURROUNDING CONTEXT (for terminology and style consistency):`;
 6. Use idiomatic Nepali expressions appropriate for navigation
 7. Preserve formatting, numbers, and special characters
 8. IMPORTANT: Preserve placeholders and HTML tags EXACTLY. 
-   - These include {0}, {1}, %s, %d, %1$s, and HTML like <a href="...">...</a>.
+   - These include <USER>, <b>,</b>, %s, %d, %1$s, and HTML like <a href="...">...</a>.
    - Do NOT translate URLs inside tags.
-   - Example 1: "By continuing, you agree to {1}this process{1}" -> "अगाडि बढेर, तपाईं {1}यस प्रक्रिया{1}मा सहमत हुनुहुन्छ।"
+   - Example 1: "By continuing, you agree to <b>this process</b>" -> "अगाडि बढेर, तपाईं <b>यस प्रक्रिया</b>मा सहमत हुनुहुन्छ।"
    - Example 2: "Check <a href='...'>email</a> for info" -> "जानकारीको लागि <a href='...'>इमेल</a> जाँच गर्नुहोस्"
    - Example 3: "You won %s and %d points" -> "तपाईंले %s र %d अंक प्राप्त गर्नुभयो"
 9. Maintain proper Devanagari script with correct diacritical marks
