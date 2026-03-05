@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.0.7
+// @version      1.0.8
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1462,7 +1462,7 @@ TXTR.DiffModern = {
 1. Use consistent terminology throughout the translation.
 2. Maintain the same tone and style as the source text, appropriate for Waze navigation app localization.
 3. Ensure clarity and accuracy for navigation context (directions, places, actions).
-4. Keep translation length proportional to the original (concise and brief).
+4. Keep translation length proportional to the original (concise and brief). Try to translate precisely with less words.
 5. Use idiomatic ${targetLang} expressions that sound natural to a native speaker.
 6. Preserve formatting: camelCase, numbers, punctuation, spacing, and special characters.
 7. CRITICAL: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d, %1$s, <USER>) EXACTLY.
@@ -1982,6 +1982,7 @@ Return ONLY the translation.`;
 
         // Main translation function with token preservation and engine selection
         async translateText(text, lang) {
+            console.log(`[TXTR] Sending to translate (${lang}):`, text);
             const runs = this.splitRuns(text);
             this.state.hasPlaceholders = runs.some(r => r.type === 'token');
 
@@ -1989,6 +1990,7 @@ Return ONLY the translation.`;
             
             for (let i = 0; i < runs.length; i++) {
                 if (runs[i].type === 'text') {
+                    console.log(`[TXTR] Run ${i+1}/${runs.length} (Type: text):`, runs[i].value);
                     let translated;
                     const useContext = TXTR.Storage.get('useContextAware') === '1';
                     const prevText = i > 0 ? runs[i-1].value : '';
@@ -2020,9 +2022,103 @@ Return ONLY the translation.`;
                     }
                     
                     runs[i].value = translated;
+                } else if (runs[i].type === 'token') {
+                    console.log(`[TXTR] Run ${i+1}/${runs.length} (Type: token - skipped):`, runs[i].value);
                 }
             }
-            return this.joinRunsWithSpacing(runs);
+            const joined = this.joinRunsWithSpacing(runs);
+            console.log(`[TXTR] Final joined translation:`, joined);
+            return joined;
+        },
+
+        // Helper: Extract text from source element with placeholder expansion
+        extractSourceText(srcEl) {
+            if (!srcEl) return '';
+            
+            // Check if element has tx-placeholder children (Transifex modern UI)
+            if (srcEl.querySelectorAll('tx-placeholder').length > 0) {
+                const clone = srcEl.cloneNode(true);
+                clone.querySelectorAll('tx-placeholder').forEach(ph => {
+                    // Skip glossary highlights as they are just visual aids for translators
+                    // and contain the actual word as text content.
+                    if (ph.classList.contains('glossary-highlight')) {
+                        // Keep the text inside, remove the wrapper
+                        const text = ph.textContent || ph.innerText || '';
+                        ph.replaceWith(text);
+                        return;
+                    }
+
+                    const originalAttr = ph.getAttribute('data-original-title');
+                    if (originalAttr) {
+                        // Decode HTML entities (e.g., &lt; to <)
+                        const decoded = originalAttr.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+                        ph.replaceWith(decoded);
+                    }
+                });
+                return clone.innerText || clone.textContent || '';
+            }
+            
+            return srcEl.innerText || srcEl.textContent || '';
+        },
+
+        // New Helper: Inject translation back into Transifex tx-placeholder UI
+        injectTransifexTranslation(targetEl, translatedHtml) {
+            if (!targetEl) return;
+            
+            // 1. Check if the target previously had tx-placeholders or if we need to reconstruct them
+            // We'll create a temporary map of the original placeholders from the source
+            const srcEl = TXTR.DOM.findSourceTextArea();
+            if (!srcEl) return;
+
+            const placeholders = Array.from(srcEl.querySelectorAll('tx-placeholder'));
+            if (placeholders.length === 0) {
+                targetEl.innerHTML = translatedHtml;
+                return;
+            }
+
+            // 2. We need to match the HTML tags in translatedHtml back to tx-placeholder elements
+            // This is complex because we converted placeholders to raw tags for translation.
+            // Simplified approach for Transifex: Replace the inner content but preserve the placeholder markers if they exist.
+            // If the targetEl is a contenteditable div used by Transifex, it expects tx-placeholder nodes.
+            
+            let finalContent = translatedHtml;
+            
+            // Collect mapping of raw tag strings to their placeholder objects
+            const tagMap = new Map();
+            placeholders.forEach(ph => {
+                const rawTag = ph.getAttribute('data-original-title')
+                    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+                if (!tagMap.has(rawTag)) {
+                    tagMap.set(rawTag, []);
+                }
+                tagMap.get(rawTag).push(ph.outerHTML);
+            });
+
+            // For each unique raw tag, replace occurrences with placeholders from our pool
+            tagMap.forEach((phPool, rawTag) => {
+                // Ignore very short strings that aren't clearly placeholders to avoid character-level injection
+                // If it doesn't contain a space and isn't a known placeholder type, it might be dangerous
+                const isLikelyPlaceholder = /[%_]/.test(rawTag) || rawTag.length > 3;
+                if (!isLikelyPlaceholder) return;
+
+                // Escape regex special chars
+                const escapedTag = rawTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                // Use strict word boundaries for alphanumeric tags, or check for space/start/end
+                // This prevents 'Home' from matching inside 'घर' (which contains internal Unicode sequences)
+                const regex = new RegExp(`(^|\\s|[^\\w\\d])${escapedTag}($|\\s|[^\\w\\d])`, 'g');
+                
+                let poolIndex = 0;
+                finalContent = finalContent.replace(regex, (match, p1, p2) => {
+                    // Use next available placeholder from pool, or fall back to last one if exceeded
+                    const replacement = phPool[poolIndex] || phPool[phPool.length - 1];
+                    poolIndex++;
+                    // Preserve the surrounding characters captures by p1 and p2
+                    return p1 + replacement + p2;
+                });
+            });
+
+            targetEl.innerHTML = finalContent;
         },
 
         // AutoTranslate the source string
@@ -2042,7 +2138,8 @@ Return ONLY the translation.`;
 
             if (!srcEl || !tgtEl) return;
 
-            const srcText = this.sanitizeText(srcEl.innerText?.trim() || srcEl.textContent?.trim() || '');
+            // Extract text with placeholder expansion using helper
+            const srcText = this.sanitizeText(this.extractSourceText(srcEl).trim());
             if (!srcText) return;
 
             // check if target already has text - double check length
@@ -2063,10 +2160,10 @@ Return ONLY the translation.`;
                 
                 // Final safety check: ensuring source hasn't changed while we were waiting for API
                 const currentSrcEl = TXTR.DOM.findSourceTextArea();
-                const currentSrcText = currentSrcEl ? this.sanitizeText(currentSrcEl.innerText?.trim() || currentSrcEl.textContent?.trim() || '') : '';
+                const currentSrcText = currentSrcEl ? this.sanitizeText(this.extractSourceText(currentSrcEl).trim()) : '';
                 
                 if (currentSrcText !== srcText) {
-                    console.log('[TXTR] Source changed during translation, discarding result.');
+                    console.log('[TXTR] Source changed during translation, discarding result.', { expected: srcText, current: currentSrcText });
                     return;
                 }
 
@@ -2075,13 +2172,16 @@ Return ONLY the translation.`;
                 // Re-find element just in case DOM refreshed
                 const activeTgtEl = TXTR.DOM.findTranslationTextArea();
                 if (activeTgtEl) {
+                    console.log(`[TXTR] Setting translation to target element:`, { tagName: activeTgtEl.tagName, translated });
                     if (activeTgtEl.tagName === 'TEXTAREA') {
                         activeTgtEl.value = translated;
                         activeTgtEl.dispatchEvent(new Event('input', { bubbles: true }));
                     } else {
-                        activeTgtEl.innerText = translated;
+                        // For Transifex divs, we must convert raw tags back into <tx-placeholder> nodes
+                        this.injectTransifexTranslation(activeTgtEl, translated);
                         activeTgtEl.dispatchEvent(new Event('input', { bubbles: true }));
                     }
+                    console.log(`[TXTR] Translation set successfully (with placeholder reconstruction).`);
                 }
 
                 TXTR.UI.setStatus('STATUS_SUCCESS');
