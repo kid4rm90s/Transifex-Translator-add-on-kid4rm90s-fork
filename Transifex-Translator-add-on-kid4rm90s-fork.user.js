@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.1
+// @version      1.1.2
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1512,6 +1512,7 @@ NEPALI-SPECIFIC GUIDELINES:
    - Android: एन्ड्रोइड (Android)
    -Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
    -Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
+   - Wazer: वेजर (Wazer)
 4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
 6. Use standard numerals unless the context specifically requires Devanagari numerals.
@@ -1685,6 +1686,14 @@ ${guidelines}`;
 
 TASK: Refine and improve an existing Nepali translation for better quality and naturalness.
 
+CRITICAL CONSTRAINTS:
+- Do NOT add any content that is not in the base translation.
+- Do NOT remove any HTML tags, numbers, or parentheses from the base translation.
+- Do NOT convert Arabic numerals (1, 2, 3) to Devanagari (१, २, ३).
+- Do NOT add English translations or clarifications in parentheses.
+- Preserve the EXACT structure, numbers, tags, and formatting of the base translation.
+- Only improve word choice, phrasing, and naturalness within these constraints.
+
 SOURCE TEXT (English):
 "${sourceText}"
 
@@ -1693,7 +1702,7 @@ CURRENT TRANSLATION (नेपाली):
 
 ${guidelines}
 
-Return ONLY the refined translation in Nepali.`;
+Return ONLY the refined translation in Nepali, preserving all structure and formatting.`;
         },
 
         // Refine translation using Gemini with contextual awareness
@@ -1733,6 +1742,13 @@ Return ONLY the refined translation in Nepali.`;
 
 TASK: Refine and improve an existing translation for better quality and naturalness.
 
+CRITICAL CONSTRAINTS:
+- Do NOT add any content that is not in the base translation.
+- Do NOT remove any HTML tags, numbers, or parentheses from the base translation.
+- Do NOT convert numerals or change formatting.
+- Preserve the EXACT structure, numbers, tags, and formatting of the base translation.
+- Only improve word choice, phrasing, and naturalness within these constraints.
+
 SOURCE TEXT (English):
 "${sourceText}"
 
@@ -1742,7 +1758,7 @@ CURRENT TRANSLATION (${targetLang}):
 REFINEMENT GUIDELINES:
 ${guidelines}
 
-Return ONLY the refined translation.`;
+Return ONLY the refined translation, preserving all structure and formatting.`;
             }
             
             // Attempt refine with 1 retry on rate-limit
