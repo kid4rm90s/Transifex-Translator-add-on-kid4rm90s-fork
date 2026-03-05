@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.0.6
+// @version      1.0.7
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1466,13 +1466,15 @@ TXTR.DiffModern = {
 5. Use idiomatic ${targetLang} expressions that sound natural to a native speaker.
 6. Preserve formatting: camelCase, numbers, punctuation, spacing, and special characters.
 7. CRITICAL: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d, %1$s, <USER>) EXACTLY.
-   - You MUST wrap the translated text with the SAME HTML tags as the source.
-   - Do NOT remove, translate, or modify tags or placeholders.
+   - Do NOT translate or modify placeholders.
    - Do NOT translate URLs, attributes, or text inside attributes (like href, title, etc.).
-   - Place them in the translated sentence where they logically belong to wrap or represent the same concepts as the source.
-   - Example (HTML): "<a href='%s'>Forgot password?</a>" -> "<a href='%s'>पासवर्ड बिर्सनुभयो?</a>"
-   - Example (Placeholder): "Check %s now" -> "%s अब जाँच गर्नुहोस्"
-8. No explanations, no quotation marks, no markdown - ONLY the translation.`;
+   - Wrap the translated text with the SAME HTML tags as the source.
+   - Example 1 (HTML): "<a href='%s'>Forgot password?</a>" -> "<a href='%s'>पासवर्ड बिर्सनुभयो?</a>"
+   - Example 2 (HTML): "By continuing, you agree to <b>this process</b>" -> "अगाडि बढेर, तपाईं <b>यस प्रक्रिया</b>मा सहमत हुनुहुन्छ।"
+   - Example 3 (Placeholder): "Check %s now" -> "%s अब जाँच गर्नुहोस्"
+8. Return ONLY the translation.
+9. IMPORTANT: Use raw characters (like < and >). Do NOT use HTML entities (like &lt; or &gt;).
+10. No explanations, no quotation marks, no markdown.`;
         },
 
         getNepaliGuidelines() {
@@ -1488,12 +1490,25 @@ NEPALI-SPECIFIC GUIDELINES:
    - Dative: लाई (lai)
    - Proper verb conjugations (e.g., जानुहोस्, गर्नुहोस्, पुग्नुहुनेछ).
 3. Use standard Nepali navigation terminology:
-   - Turn right: दाहिने मोडिनुहोस्, Turn left: देब्रे मोडिनुहोस्
-   - Go straight: सीधा जानुहोस्, Destination: गन्तव्य
-   - Update: अद्यावधिक (do NOT use अपडेट), Automatic: स्वचालित (do NOT use अटोमेटिक)
-4. Use standard numerals unless the context specifically requires Devanagari numerals.
-5. Avoid transliteration and Hindi-influenced vocabulary.
-6. Maintain correct Devanagari script and spelling.`;
+   - Turn right: दाहिने मोडिनुहोस् (dahine modinuhos)
+   - Turn left: देब्रे मोडिनुहोस् (debre modinuhos)
+   - Go straight: सीधा जानुहोस् (sidha januhos)
+   - Direction: दिशा (disha)
+   - Turn (noun): मोड (mod)
+   - Turn (verb): मोडिनु (modinu)
+   - North: उत्तर (uttar), South: दक्षिण (dakshin), East: पूर्व (purba), West: पश्चिम (pashchim)
+   - Road: सडक (sadak) or बाटो (bato)
+   - Destination: गन्तव्य (gantabya)
+   - Distance: दूरी (duri), Time: समय (samaya)
+   - Update: अद्यावधिक (adyabadhik) - do NOT use अपडेट
+   - Automatic: स्वचालित (swochalit) - do NOT use अटोमेटिक
+   - Set: हाल्नुहोस् (halnuhos) - do NOT use सेट गर्नुहोस्
+4. Preserve original meaning and conciseness - navigation prompts should be clear and brief.
+5. Use standard numerals unless the context specifically requires Devanagari numerals.
+6. Avoid transliteration and Hindi-influenced vocabulary (e.g., avoid "पहुँचो", "मन्जिल" if better Nepali alternatives exist).
+7. Maintain correct Devanagari script and spelling.
+8. Sound like a natural native Nepali speaker.
+9. No explanations, no quotation marks - ONLY the translation.`;
         },
 
         buildNepaliPrompt(text, lang) {
