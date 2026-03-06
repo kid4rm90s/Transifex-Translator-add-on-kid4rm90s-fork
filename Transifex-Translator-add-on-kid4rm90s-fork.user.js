@@ -1515,9 +1515,9 @@ NEPALI-SPECIFIC GUIDELINES:
    - Wazer: वेजर (Wazer)
    - Turn on: चालु गर्नुहोस् (chaloo garnuhos) or खोल्नुहोस् (kholnuhos) - do NOT use टर्न अन
    - Turn off: बन्द गर्नुहोस् (band garnuhos) - do NOT use टर्न अफ
-   - PIN: पिन (pin)
-   - Map: नक्सा (naksa)
-   - GPS: जीपीएस (GPS)
+   - PIN: पिन (pin) - do NOT use PIN
+   - Map: नक्सा (naksa) - do NOT use म्याप
+   - GPS: जीपीएस (GPS) - do not use GPS
 4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
 6. Use standard numerals unless the context specifically requires Devanagari numerals.
