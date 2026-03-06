@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.2
+// @version      1.1.3
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1513,6 +1513,10 @@ NEPALI-SPECIFIC GUIDELINES:
    -Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
    -Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
    - Wazer: वेजर (Wazer)
+   - Turn on: चालु गर्नुहोस् (chaloo garnuhos) - do NOT use टर्न अन
+   - Turn off: बन्द गर्नुहोस् (band garnuhos) - do NOT use टर्न अफ
+   - PIN: पिन (pin)
+   - Map: नक्सा (naksa)
 4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
 6. Use standard numerals unless the context specifically requires Devanagari numerals.
