@@ -1513,7 +1513,9 @@ NEPALI-SPECIFIC GUIDELINES:
    - Android: एन्ड्रोइड (Android)
    - Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
    - Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
-   - Wazer: वेजर (Wazer)
+   - Wazer: वेजर
+   - Google: गुगल
+   - Waze: वेज
    - Turn on: चालु गर्नुहोस् (chaloo garnuhos) or खोल्नुहोस् (kholnuhos) - do NOT use टर्न अन
    - Turn off: बन्द गर्नुहोस् (band garnuhos) - do NOT use टर्न अफ
    - PIN: पिन (pin) - do NOT use PIN
