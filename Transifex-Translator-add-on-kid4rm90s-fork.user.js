@@ -1510,13 +1510,14 @@ NEPALI-SPECIFIC GUIDELINES:
    - Location Services: स्थान सेवाहरू (sthan sewaharu)
    - iPhone: आईफोन (iPhone)
    - Android: एन्ड्रोइड (Android)
-   -Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
-   -Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
+   - Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
+   - Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
    - Wazer: वेजर (Wazer)
    - Turn on: चालु गर्नुहोस् (chaloo garnuhos) - do NOT use टर्न अन
    - Turn off: बन्द गर्नुहोस् (band garnuhos) - do NOT use टर्न अफ
    - PIN: पिन (pin)
    - Map: नक्सा (naksa)
+   - GPS: जीपीएस (GPS)
 4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
 6. Use standard numerals unless the context specifically requires Devanagari numerals.
