@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4.2
+// @version      1.1.4.1
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1462,31 +1462,71 @@ TXTR.DiffModern = {
         // Build contextual prompt for better translations
         // Build Nepali-specific contextual prompt (for English to Nepali)
         getGeneralGuidelines(targetLang = 'the target language') {
-            return `GENERAL GUIDELINES:
-1. Use consistent navigation terminology (Waze context). Maintain source tone/style.
-2. Be brief and precise. Keep translation length similar to original.
-3. Use natural, idiomatic ${targetLang} expressions.
-4. CRITICAL: Preserve formatting, numbers, punctuation, and spacing.
-5. CRITICAL: Keep HTML tags (<b>, <a href="...">) and placeholders ({0}, %s, <USER>) EXACTLY as in source. 
-   - Never translate URLs or attribute names (href, title).
-   - Wrap translated text in the SAME tags.
-   - Example: "<a href='%s'>Forgot?</a>" -> "<a href='%s'>बिर्सनुभयो?</a>"
-6. Return ONLY the raw translation string. No explanations, no quotes, no markdown, no HTML entities (&lt;).`;
+            return `GENERAL TRANSLATION GUIDELINES:
+1. Use consistent terminology throughout the translation.
+2. Maintain the same tone and style as the source text, appropriate for Waze navigation app localization.
+3. Ensure clarity and accuracy for navigation context (directions, places, actions).
+4. Keep translation length proportional to the original (concise and brief). Try to translate precisely with less words.
+5. Use idiomatic ${targetLang} expressions that sound natural to a native speaker.
+6. Preserve formatting: camelCase, numbers, punctuation, spacing, and special characters.
+7. CRITICAL: Preserve HTML tags (<b>, <i>, <a href="...">, etc.) and placeholders ({0}, {1}, %s, %d, %1$s, <USER>) EXACTLY.
+   - Do NOT translate or modify placeholders.
+   - Do NOT translate URLs, attributes, or text inside attributes (like href, title, etc.).
+   - Wrap the translated text with the SAME HTML tags as the source.
+   - Example 1 (HTML): "<a href='%s'>Forgot password?</a>" -> "<a href='%s'>पासवर्ड बिर्सनुभयो?</a>"
+   - Example 2 (HTML): "By continuing, you agree to <b>this process</b>" -> "अगाडि बढेर, तपाईं <b>यस प्रक्रिया</b>मा सहमत हुनुहुन्छ।"
+   - Example 3 (Placeholder): "Check %s now" -> "%s अब जाँच गर्नुहोस्"
+8. Return ONLY the translation.
+9. IMPORTANT: Use raw characters (like < and >). Do NOT use HTML entities (like &lt; or &gt;).
+10. No explanations, no quotation marks, no markdown.`;
         },
 
         getNepaliGuidelines() {
-            return `${this.getGeneralGuidelines('Nepali (नेपाली)')}
+            const general = this.getGeneralGuidelines('Nepali (नेपाली)');
+            return `${general}
 
-NEPALI SPECIFICS:
-1. Tone: Polite (तपाईं). Grammar: Use correct cases (को, ले, मा, लाई) and verb forms (जानुहोस्).
-2. Use standard navigation terms:
-   - Turn Right/Left: दाहिने/देब्रे मोडिनुहोस्. Go Straight: सीधा जानुहोस्. Map: नक्सा.
-   - Updates: अद्यावधिक. Settings: सेटिङस्. Location: स्थान. Share: साझा गर्नुहोस्.
-   - Turn On/Off: चालु/बन्द गर्नुहोस्. Destination: गन्तव्य. Road: सडक/बाटो.
-3. Localization: Transliterate brand names if common (आईफोन, एन्ड्रोइड, वेजर).
-4. No Hindi-influenced words (e.g., avoid ‘पहुँचो’). Use standard numerals unless specified.
-5. Translate terms INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
-6. Use जीपीएस for GPS, पिन for PIN, नक्सा for Map, काम/कार्यस्थल for Work, राख्नुहोस्/हाल्नुहोस् for Set, and other standard Nepali terms for navigation context.`;
+NEPALI-SPECIFIC GUIDELINES:
+1. Use professional and polite register (तपाईं) appropriate for specialized localization.
+2. Maintain correct Nepali grammar:
+   - Genitive: को (ko), का (ka), की (ki)
+   - Ergative: ले (le)
+   - Locative: मा (ma)
+   - Dative: लाई (lai)
+   - Proper verb conjugations (e.g., जानुहोस्, गर्नुहोस्, पुग्नुहुनेछ).
+3. Use standard Nepali navigation terminology:
+   - Turn right: दाहिने मोडिनुहोस् (dahine modinuhos)
+   - Turn left: देब्रे मोडिनुहोस् (debre modinuhos)
+   - Go straight: सीधा जानुहोस् (sidha januhos)
+   - Direction: दिशा (disha)
+   - Turn (noun): मोड (mod)
+   - Turn (verb): मोडिनु (modinu)
+   - North: उत्तर (uttar), South: दक्षिण (dakshin), East: पूर्व (purba), West: पश्चिम (pashchim)
+   - Road: सडक (sadak) or बाटो (bato)
+   - Destination: गन्तव्य (gantabya)
+   - Distance: दूरी (duri), Time: समय (samaya)
+   - Update: अद्यावधिक (adyabadhik) - do NOT use अपडेट
+   - Automatic: स्वचालित (swochalit) - do NOT use अटोमेटिक
+   - Set: हाल्नुहोस् (halnuhos) or राख्नुहोस् (rakhnuhos) - do NOT use सेट गर्नुहोस्
+   - Settings: सेटिङस् (setings)
+   - Location Services: स्थान सेवाहरू (sthan sewaharu)
+   - iPhone: आईफोन (iPhone)
+   - Android: एन्ड्रोइड (Android)
+   - Share: साझा गर्नुहोस् (sajha garnuhos) - do NOT use शेयर if used as verb
+   - Share (noun): साझा (sajha) - do NOT use शेयर if used as noun
+   - Wazer: वेजर (Wazer)
+   - Turn on: चालु गर्नुहोस् (chaloo garnuhos) or खोल्नुहोस् (kholnuhos) - do NOT use टर्न अन
+   - Turn off: बन्द गर्नुहोस् (band garnuhos) - do NOT use टर्न अफ
+   - PIN: पिन (pin) - do NOT use PIN
+   - Map: नक्सा (naksa) - do NOT use म्याप
+   - GPS: जीपीएस (GPS) - do not use GPS
+   - Work: काम (kam) or कार्यस्थल (karyasthal) - do NOT use वर्क or कामको स्थान
+4. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
+5. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
+6. Use standard numerals unless the context specifically requires Devanagari numerals.
+6. Avoid transliteration and Hindi-influenced vocabulary (e.g., avoid "पहुँचो", "मन्जिल" if better Nepali alternatives exist).
+7. Maintain correct Devanagari script and spelling.
+8. Sound like a natural native Nepali speaker.
+9. No explanations, no quotation marks - ONLY the translation.`;
         },
 
         buildNepaliPrompt(text, lang) {
