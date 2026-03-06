@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.3
+// @version      1.1.4
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -2110,30 +2110,85 @@ Return ONLY the translation.`;
         injectTransifexTranslation(targetEl, translatedHtml) {
             if (!targetEl) return;
             
-            // Set focus to the Transifex editor
-            targetEl.focus();
-
             try {
-                // Clear existing content
-                document.execCommand('selectAll', false, null);
-                document.execCommand('delete', false, null);
+                targetEl.focus();
                 
-                // Transifex's Draft.js editor parses plain text containing HTML tags and
-                // automatically converts them to <tx-placeholder> (the "1", "2" bubble UIs).
-                // We paste it as plain text to trigger this internal auto-parsing.
-                const dataTransfer = new DataTransfer();
-                dataTransfer.setData('text/plain', translatedHtml);
+                console.log('[TXTR] Before clearing - innerHTML:', targetEl.innerHTML);
+                console.log('[TXTR] Before clearing - textContent:', targetEl.textContent);
+                console.log('[TXTR] Translation to inject:', translatedHtml);
                 
-                const pasteEvent = new ClipboardEvent('paste', {
-                    bubbles: true,
-                    cancelable: true,
-                    clipboardData: dataTransfer
-                });
+                // Clear ALL child nodes completely - this is the most reliable method
+                // because execCommand doesn't work reliably with Draft.js
+                while (targetEl.firstChild) {
+                    targetEl.removeChild(targetEl.firstChild);
+                }
                 
-                targetEl.dispatchEvent(pasteEvent);
+                console.log('[TXTR] After DOM clear - innerHTML:', targetEl.innerHTML);
+                console.log('[TXTR] After DOM clear - textContent:', targetEl.textContent);
+                
+                // Now insert the text using insertText command
+                // This allows Transifex to parse and handle the content properly
+                setTimeout(() => {
+                    // Create selection at the start of the now-empty element
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    
+                    if (targetEl.firstChild) {
+                        range.setStart(targetEl.firstChild, 0);
+                    } else {
+                        // If element is empty, position cursor at the element itself
+                        range.setStart(targetEl, 0);
+                    }
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    
+                    console.log('[TXTR] Selection created in empty element, inserting text');
+                    
+                    // Insert the translation text
+                    const insertSuccess = document.execCommand('insertText', false, translatedHtml);
+                    console.log('[TXTR] insertText result:', insertSuccess);
+                    console.log('[TXTR] After insertText - innerHTML:', targetEl.innerHTML);
+                    console.log('[TXTR] After insertText - textContent:', targetEl.textContent);
+                    
+                    // Dispatch events to notify Transifex's editor
+                    targetEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    targetEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    // Force Draft.js to recognize the content by triggering a blur/focus cycle
+                    // This is necessary because insertText updates the DOM but doesn't update Draft.js's internal state
+                    setTimeout(() => {
+                        console.log('[TXTR] Triggering blur/focus cycle to force Draft.js state update');
+                        targetEl.blur();
+                        setTimeout(() => {
+                            targetEl.focus();
+                            console.log('[TXTR] Focus restored, Draft.js should now recognize the content');
+                        }, 10);
+                    }, 10);
+                    
+                }, 50);
+                
             } catch(e) {
-                console.warn('[TXTR] Paste injection failed, falling back', e);
-                targetEl.innerText = translatedHtml;
+                console.warn('[TXTR] Injection failed:', e);
+                // Fallback: Direct text content replacement
+                try {
+                    while (targetEl.firstChild) {
+                        targetEl.removeChild(targetEl.firstChild);
+                    }
+                    targetEl.textContent = translatedHtml;
+                    targetEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    targetEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    // Also trigger blur/focus in fallback
+                    setTimeout(() => {
+                        targetEl.blur();
+                        setTimeout(() => {
+                            targetEl.focus();
+                        }, 10);
+                    }, 10);
+                } catch(fallbackError) {
+                    console.error('[TXTR] Fallback also failed:', fallbackError);
+                }
             }
         },
 
