@@ -1505,7 +1505,7 @@ NEPALI-SPECIFIC GUIDELINES:
    - Distance: दूरी (duri), Time: समय (samaya)
    - Update: अद्यावधिक (adyabadhik) - do NOT use अपडेट
    - Automatic: स्वचालित (swochalit) - do NOT use अटोमेटिक
-   - Set: हाल्नुहोस् (halnuhos) - do NOT use सेट गर्नुहोस्
+   - Set: हाल्नुहोस् (halnuhos) or राख्नुहोस् (rakhnuhos) - do NOT use सेट गर्नुहोस्
    - Settings: सेटिङस् (setings)
    - Location Services: स्थान सेवाहरू (sthan sewaharu)
    - iPhone: आईफोन (iPhone)
