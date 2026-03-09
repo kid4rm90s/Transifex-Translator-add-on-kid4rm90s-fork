@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4.3
+// @version      1.1.4.4
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -216,6 +216,7 @@ TXTR.WordCounter = {
 
 TXTR.__TooltipTexts = {
     en: 'Compares the translated text length with the original text in Transifex',
+    ne: 'Transifex मा अनुवादित पाठको लम्बाईलाई मूल पाठसँग तुलना गर्दछ',
     he: 'השוואה בין אורך התרגום לבין אורך הטקסט המקורי ב-Transifex',
     es: 'Compara la longitud de la traducción con el texto original en Transifex',
     ru: 'Сравнение длины перевода с исходным текстом в Transifex',
@@ -382,6 +383,59 @@ TXTR.DiffModern = {
                 TOKEN_USAGE: 'Gemini Token Usage',
                 TOTAL_TOKENS: 'Total Tokens:',
                 RESET_TOKENS: 'Reset Counter',
+                COMPARISON_DIFF_AREA: 'Comparison Diff Area',
+            },
+            ne: {
+                TARGET_LANG: 'लक्षित भाषा',
+                UI_LANG: 'UI भाषा',
+                THEME: 'थीम',
+                THEME_LIGHT: 'उज्यालो',
+                THEME_DARK: 'अँध्यारो',
+                SETTINGS: 'सेटिङहरू',
+                RETRANSLATE: 'पुन: अनुवाद गर्नुहोस्',
+                COPY_CHATGPT: 'प्रतिलिपि गर्नुहोस् & ChatGPT',
+                PAUSE_AUTOTR: 'स्वचालित अनुवाद रोक्नुहोस्',
+                RESUME_AUTOTR: 'स्वचालित अनुवाद सुचारू गर्नुहोस्',
+                PAUSE: 'रोक्नुहोस्',
+                RESUME: 'सुचारू गर्नुहोस्',
+                DICTA: 'डिक्टा निकुड',
+                USE_TRANSLATION: 'यो अनुवाद प्रयोग गर्नुहोस्',
+                PREVIEW: 'पूर्वावलोकन',
+                BASELINE: 'आधाररेखा',
+                DRAFT: 'मस्यौदा',
+                SHOW_DIFF: 'तुलना बाकस देखाउनुहोस्',
+                DISCLAIMER: 'जानकारी: यो मेशिन अनुवाद हो। कृपया सुरक्षित गर्नु अघि जाँच गर्नुहोस्।',
+                STATUS_TRANSLATING: 'अनुवाद गर्दै...',
+                STATUS_SUCCESS: '✓ सम्पन्न',
+                STATUS_COPIED: '✓ प्रतिलिपि गरियो',
+                STATUS_ERROR: '✗ त्रुटि',
+                STATUS_PAUSED: 'स्वचालित अनुवाद रोकियो',
+                COLLAPSE: 'सङ्कुचित गर्नुहोस्',
+                EXPAND: 'विस्तार गर्नुहोस्',
+                CLOSE: 'बन्द गर्नुहोस्',
+                DRAG: 'तान्नुहोस्',
+                FULL_MODE: 'पूर्ण',
+                COMPACT_MODE: 'सङ्कुचित',
+                COPY_BASELINE: 'आधाररेखा प्रतिलिपि गर्नुहोस्',
+                COPY_BASELINE_TIP: 'आधाररेखा पाठलाई मस्यौदामा सम्पादनको लागि प्रतिलिपि गर्नुहोस्',
+                CLEAR_DRAFT_TIP: 'मस्यौदा पाठ मेटाउनुहोस्',
+                TRANSLATION_ENGINE: 'अनुवाद इन्जिन',
+                ENGINE_GOOGLE: 'गुगल अनुवाद (छिटो)',
+                ENGINE_GEMINI: 'जेमिनी (उच्च गुणस्तर)',
+                ENGINE_HYBRID: 'हाइब्रिड (गुगल + जेमिनी सुधार)',
+                GEMINI_API_KEY: 'जेमिनी API कुञ्जी',
+                GEMINI_API_KEY_PLACEHOLDER: 'aistudio.google.com बाट आफ्नो API कुञ्जी हाल्नुहोस्',
+                GEMINI_MODEL: 'जेमिनी मोडेल',
+                MODEL_FLASH: 'Flash (छिटो)',
+                MODEL_PRO: 'Pro (उच्च गुणस्तर)',
+                USE_CONTEXT: 'सन्दर्भ-सचेत अनुवाद प्रयोग गर्नुहोस्',
+                GET_API_KEY: 'निःशुल्क API कुञ्जी प्राप्त गर्नुहोस् \u2192',
+                SAVE_SETTINGS: 'सेटिङहरू सुरक्षित गर्नुहोस्',
+                SETTINGS_SAVED: '\u2713 सेटिङहरू सुरक्षित गरियो',
+                TOKEN_USAGE: 'जेमिनी टोकन प्रयोग',
+                TOTAL_TOKENS: 'कुल टोकन:',
+                RESET_TOKENS: 'काउन्टर रिसेट गर्नुहोस्',
+                COMPARISON_DIFF_AREA: 'फरक तुलना गर्ने क्षेत्र',
             },
             he: {
                 TARGET_LANG: 'שפת יעד',
@@ -416,6 +470,7 @@ TXTR.DiffModern = {
                 COPY_BASELINE: 'העתק בסיס',
                 COPY_BASELINE_TIP: 'העתק את הבסיס לטיוטה',
                 CLEAR_DRAFT_TIP: 'נקה טיוטה',
+                COMPARISON_DIFF_AREA: 'אזור השוואה Diff',
             },
             es: {
                 TARGET_LANG: 'Idioma destino',
@@ -1475,7 +1530,7 @@ TXTR.DiffModern = {
    - Wrap the translated text with the SAME HTML tags as the source.
    - Example 1 (HTML): "<a href='%s'>Forgot password?</a>" -> "<a href='%s'>पासवर्ड बिर्सनुभयो?</a>"
    - Example 2 (HTML): "By continuing, you agree to <b>this process</b>" -> "अगाडि बढेर, तपाईं <b>यस प्रक्रिया</b>मा सहमत हुनुहुन्छ।"
-   - Example 3 (Placeholder): "Check %s now" -> "%s अब जाँच गर्नुहोस्"
+   - Example 3 (Placeholder): "Check %s now" -> "%s अब जाँच गर्नुस्"
 8. Return ONLY the translation.
 9. IMPORTANT: Use raw characters (like < and >). Do NOT use HTML entities (like &lt; or &gt;).
 10. No explanations, no quotation marks, no markdown.`;
@@ -1492,7 +1547,7 @@ NEPALI-SPECIFIC GUIDELINES:
    - Ergative: ले (le)
    - Locative: मा (ma)
    - Dative: लाई (lai)
-   - Proper verb conjugations (e.g., जानुहोस्, गर्नुहोस्, पुग्नुहुनेछ).
+   - Proper verb conjugations (e.g., जानुहोस्, गर्नुस्, पुग्नुहुनेछ).
 3. Use standard Nepali navigation terminology:
    - Turn right: दाहिने मोडिनुहोस्
    - Turn left: देब्रे मोडिनुहोस्
@@ -1567,7 +1622,7 @@ ${guidelines}`;
                 'ja': 'Japanese', 'ko': 'Korean', 'zh': 'Chinese', 'tr': 'Turkish',
                 'nl': 'Dutch', 'pl': 'Polish', 'vi': 'Vietnamese', 'th': 'Thai',
                 'id': 'Indonesian', 'tl': 'Filipino', 'ms': 'Malay', 'el': 'Greek',
-                'fa': 'Farsi', 'hi': 'Hindi', 'uk': 'Ukrainian', 'ne': 'Nepali', 'en': 'English'
+                'fa': 'Farsi', 'hi': 'Hindi', 'uk': 'Ukrainian', 'ne': 'Nepali', 'en': 'English', 'ne': 'Nepali'
             };
             
             const targetLang = langNames[lang] || lang;
@@ -1745,7 +1800,7 @@ Return ONLY the refined translation in Nepali, preserving all structure and form
                     'ja': 'Japanese', 'ko': 'Korean', 'zh': 'Chinese', 'tr': 'Turkish',
                     'nl': 'Dutch', 'pl': 'Polish', 'vi': 'Vietnamese', 'th': 'Thai',
                     'id': 'Indonesian', 'tl': 'Filipino', 'ms': 'Malay', 'el': 'Greek',
-                    'fa': 'Farsi', 'hi': 'Hindi', 'uk': 'Ukrainian', 'en': 'English'
+                    'fa': 'Farsi', 'hi': 'Hindi', 'uk': 'Ukrainian', 'en': 'English', 'ne': 'Nepali'
                 };
                 
                 const targetLang = langNames[lang] || lang;
@@ -1940,7 +1995,7 @@ Return ONLY the translation in Nepali.`;
                     'ja': 'Japanese', 'ko': 'Korean', 'zh': 'Chinese', 'tr': 'Turkish',
                     'nl': 'Dutch', 'pl': 'Polish', 'vi': 'Vietnamese', 'th': 'Thai',
                     'id': 'Indonesian', 'tl': 'Filipino', 'ms': 'Malay', 'el': 'Greek',
-                    'fa': 'Farsi', 'hi': 'Hindi', 'uk': 'Ukrainian', 'en': 'English'
+                    'fa': 'Farsi', 'hi': 'Hindi', 'uk': 'Ukrainian', 'ne': 'Nepali', 'en': 'English'
                 };
                 
                 const targetLang = langNames[lang] || lang;
@@ -3081,7 +3136,7 @@ enableDrag(ui, header) {
 // Modern diff container (UI only, placeholder)
 const diffModernContainer = TXTR.DOM.createElement('div', {
     className: 'txtr-diff-box',
-    textContent: 'Comparison Diff Area'
+    textContent: TXTR.UILang.get('COMPARISON_DIFF_AREA')
 });
 scrollArea.appendChild(diffModernContainer);
 
@@ -3497,7 +3552,8 @@ this.elements.useBtn = useBtn;
                 'tg': 'Tajik', 'ta': 'Tamil', 'tt': 'Tatar', 'te': 'Telugu',
                 'th': 'Thai', 'tr': 'Turkish', 'tk': 'Turkmen', 'uk': 'Ukrainian',
                 'ur': 'Urdu', 'ug': 'Uyghur', 'uz': 'Uzbek', 'vi': 'Vietnamese',
-                'cy': 'Welsh', 'xh': 'Xhosa', 'yi': 'Yiddish', 'yo': 'Yoruba', 'zu': 'Zulu'
+                'cy': 'Welsh', 'xh': 'Xhosa', 'yi': 'Yiddish', 'yo': 'Yoruba', 'zu': 'Zulu', 'ne': 'Nepali'
+
             };
 
             Object.entries(languages).forEach(([code, name]) => {
@@ -3518,7 +3574,7 @@ this.elements.useBtn = useBtn;
                 uk:'Українська', de:'Deutsch', fr:'Français', pt:'Português', it:'Italiano',
                 tr:'Türkçe', ms:'Bahasa Melayu', tl:'Tagalog', id:'Bahasa Indonesia', nl:'Nederlands',
                 el:'Ελληνικά', fa:'فارسی', hi:'हिन्दी', ja:'日本語', ko:'한국어',
-                pl:'Polski', th:'ไทย', vi:'Tiếng Việt', zh:'简体中文', 'zh-TW':'繁體中文'
+                pl:'Polski', th:'ไทย', vi:'Tiếng Việt', zh:'简体中文', 'zh-TW':'繁體中文', ne:'नेपाली'
             };
 
             const items = Object.keys(TXTR.UILang.labels).map(code => ({
