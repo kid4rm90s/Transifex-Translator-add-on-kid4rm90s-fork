@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4.4
+// @version      1.1.4.5
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -443,6 +443,7 @@ TXTR.DiffModern = {
                 THEME: 'ערכת נושא',
                 THEME_LIGHT: 'בהיר',
                 THEME_DARK: 'כהה',
+                SETTINGS: 'הגדרות',
                 RETRANSLATE: 'תרגם מחדש',
                 COPY_CHATGPT: 'העתק ו-ChatGPT',
                 PAUSE_AUTOTR: 'השהה תרגום אוטומטי',
@@ -478,6 +479,7 @@ TXTR.DiffModern = {
                 THEME: 'Tema',
                 THEME_LIGHT: 'Claro',
                 THEME_DARK: 'Oscuro',
+                SETTINGS: 'Configuración',
                 RETRANSLATE: 'Retraducir',
                 COPY_CHATGPT: 'Copiar y ChatGPT',
                 PAUSE_AUTOTR: 'Pausar traducción automática',
@@ -512,6 +514,7 @@ TXTR.DiffModern = {
                 THEME: 'Тема',
                 THEME_LIGHT: 'Светлая',
                 THEME_DARK: 'Тёмная',
+                SETTINGS: 'Настройки',
                 RETRANSLATE: 'Перевести снова',
                 COPY_CHATGPT: 'Копировать и ChatGPT',
                 PAUSE_AUTOTR: 'Пауза автоперевода',
@@ -546,6 +549,7 @@ TXTR.DiffModern = {
                 THEME: 'السمة',
                 THEME_LIGHT: 'فاتح',
                 THEME_DARK: 'داكن',
+                SETTINGS: 'الإعدادات',
                 RETRANSLATE: 'إعادة الترجمة',
                 COPY_CHATGPT: 'نسخ و ChatGPT',
                 PAUSE_AUTOTR: 'إيقاف الترجمة التلقائية مؤقتًا',
@@ -711,7 +715,7 @@ TXTR.DiffModern = {
                 COPY_BASELINE_TIP: 'Copiar baseline para o rascunho',
                 CLEAR_DRAFT_TIP: 'Limpar rascunho',
             },
-                        it: {
+                it: {
                 TARGET_LANG: 'Lingua di destinazione',
                 UI_LANG: 'Lingua dell’interfaccia',
                 THEME: 'Tema',
@@ -744,8 +748,8 @@ TXTR.DiffModern = {
                 COPY_BASELINE: 'Copia baseline',
                 COPY_BASELINE_TIP: 'Copia la baseline nella bozza',
                 CLEAR_DRAFT_TIP: 'Cancella bozza',
-            }
-,             tr: {
+            },
+             tr: {
                 TARGET_LANG: 'Hedef Dil',
                 UI_LANG: 'Arayüz Dili',
                 THEME: 'Tema',
@@ -1578,6 +1582,7 @@ NEPALI-SPECIFIC GUIDELINES:
    - Map: नक्सा - do NOT use म्याप
    - GPS: जीपीएस - do not use GPS
    - Work: काम or कार्यस्थल - do NOT use वर्क or कामको स्थान
+   - Report: उजुरी - do NOT use रिपोर्ट
 4. CRITICAL: NEVER include the English source word in parentheses within the translation. For example, translate "Location" as "स्थान", NOT "स्थान (location)".
 5. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 6. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
@@ -2968,7 +2973,7 @@ setupDraftHeightSync() {
 
             if (this.isCompact) {
                 ui.classList.add('txtr-compact');
-                const compact = TXTR.Storage.getJSON('sizeCompact') || { w: 449, h: 318 };
+                const compact = TXTR.Storage.getJSON('sizeCompact') || { w: 565, h: 118 };
                 ui.style.width = compact.w + 'px';
                 ui.style.height = compact.h + 'px';
             } else {
@@ -2984,6 +2989,7 @@ setupDraftHeightSync() {
             }
 
             TXTR.UI.updateActionButtons();
+            TXTR.UI.updateHeaderTitle();
             const draftWrapper = document.querySelector('.txtr-draft-wrapper');
             if (draftWrapper) {
                 draftWrapper.style.display = TXTR.Layout.isCompact ? 'none' : '';
@@ -3343,6 +3349,17 @@ Great!
 
                         this.elements.engineBtn = engineBtn;
 
+// Translate button
+            const translateBtn = TXTR.DOM.createElement('button', {
+                className: 'txtr-btn txtr-btn-icon',
+                textContent: '✨',
+                title: TXTR.UILang.get('RETRANSLATE'),
+                onClick: () => TXTR.Actions.retranslate()
+            });
+            left.appendChild(translateBtn);
+
+                        this.elements.translateBtn = translateBtn;
+
 // Settings button
             const settingsBtn = TXTR.DOM.createElement('button', {
                 className: 'txtr-btn txtr-btn-icon',
@@ -3357,8 +3374,9 @@ header.appendChild(left);
             // Center - Title
             const center = TXTR.DOM.createElement('div', {
                 className: 'txtr-header-center',
-                textContent: 'Transifex Translator add-on (kid4rm90s fork)'
+                textContent: TXTR.Layout.isCompact ? 'TTA (kid4rm90s fork)' : `${GM.info.script.name}`,
             });
+            this.elements.centerTitle = center;
             header.appendChild(center);
 
             // Right section
@@ -3433,6 +3451,13 @@ header.appendChild(right);
             row.appendChild(langSelect);
 
             return row;
+        },
+
+        updateHeaderTitle() {
+            const centerTitle = this.elements.centerTitle;
+            if (centerTitle) {
+                centerTitle.textContent = TXTR.Layout.isCompact ? 'TTA (kid4rm90s fork)' : `${GM.info.script.name}`;
+            }
         },
 
         buildActionsRow() {
@@ -4064,7 +4089,7 @@ this.elements.useBtn = useBtn;
             }
 
             const full = TXTR.Storage.getJSON('sizeFull');
-            const compact = TXTR.Storage.getJSON('sizeCompact') || { w: 449, h: 318 };
+            const compact = TXTR.Storage.getJSON('sizeCompact') || { w: 565, h: 118 };
 
             if (TXTR.Layout.isCompact) {
                 ui.style.width = compact.w + 'px';
@@ -4217,7 +4242,9 @@ this.injectUI(ui);
                 #txtr-ui.txtr-compact .txtr-resizer {
                     display: none;
                 }
+                #txtr-ui.txtr-compact .txtr-content { flex: 0; padding: 8px; overflow: visible; }
                 #txtr-ui.txtr-compact .txtr-btn { width: 38px; height: 38px; padding: 0; font-size: 1.2em; }
+                #txtr-ui.txtr-compact .txtr-actions-row { margin: 0; }
                 #txtr-ui.txtr-collapsed { min-height: 0; height: auto !important; }
                 .txtr-header {
                     display: flex; align-items: center; justify-content: space-between;
