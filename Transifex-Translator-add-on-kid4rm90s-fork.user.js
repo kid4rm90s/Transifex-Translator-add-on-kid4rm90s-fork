@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.4.5
+// @version      1.1.4.6
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1566,16 +1566,14 @@ NEPALI-SPECIFIC GUIDELINES:
    - Update: अद्यावधिक - do NOT use अपडेट
    - Automatic: स्वचालित - do NOT use अटोमेटिक
    - Set: हाल्नुहोस् or राख्नुहोस् - do NOT use सेट गर्नुहोस्
-   - Settings: सेटिङस्
+   - Settings: सेटिङस् - do NOT use सेटिङहरू
    - Location Services: स्थान सेवाहरू
    - Location: स्थान
    - iPhone: आईफोन
    - Android: एन्ड्रोइड
    - Share: साझा गर्नुहोस् - do NOT use शेयर if used as verb
    - Share (noun): साझा - do NOT use शेयर if used as noun
-   - Wazer: वेजर
    - Google: गुगल
-   - Waze: वेज
    - Turn on: चालु गर्नुहोस् or खोल्नुहोस् - do NOT use टर्न अन
    - Turn off: बन्द गर्नुहोस् - do NOT use टर्न अफ
    - PIN: पिन - do NOT use PIN
@@ -1583,6 +1581,8 @@ NEPALI-SPECIFIC GUIDELINES:
    - GPS: जीपीएस - do not use GPS
    - Work: काम or कार्यस्थल - do NOT use वर्क or कामको स्थान
    - Report: उजुरी - do NOT use रिपोर्ट
+   - Drive: ड्राइभ - do NOT use ड्राइव
+   - Navigation: मार्गदर्शन - do NOT use नेभिगेसन
 4. CRITICAL: NEVER include the English source word in parentheses within the translation. For example, translate "Location" as "स्थान", NOT "स्थान (location)".
 5. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 6. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
@@ -1591,7 +1591,8 @@ NEPALI-SPECIFIC GUIDELINES:
 9. Maintain correct Devanagari script and spelling.
 10. Sound like a natural native Nepali speaker.
 11. CRITICAL: NEVER include English translations or original words in parentheses (e.g., do NOT write "सटीक (Precise)"). If the source doesn't have parentheses, your translation MUST NOT have parentheses.
-12. Return ONLY the translation. No explanations, no markdown.`;
+12. Waze, Wazer, and Wazers must remain unchanged. Do NOT translate or transliterate these words.
+13. Return ONLY the translation. No explanations, no markdown.`;
         },
 
         buildNepaliPrompt(text, lang) {
