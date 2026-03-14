@@ -1584,6 +1584,7 @@ NEPALI-SPECIFIC GUIDELINES:
    - Drive: ड्राइभ - do NOT use ड्राइव
    - Navigation: मार्गदर्शन - do NOT use नेभिगेसन
    - Saved places: सुरक्षित स्थानहरू
+   - Resume: सुचारु - do NOT use पुनः सुरु
 4. CRITICAL: NEVER include the English source word in parentheses within the translation. For example, translate "Location" as "स्थान", NOT "स्थान (location)".
 5. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 6. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
