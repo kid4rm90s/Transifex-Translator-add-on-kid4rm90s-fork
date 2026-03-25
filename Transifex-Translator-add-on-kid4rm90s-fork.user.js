@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.5.3
+// @version      1.1.5.4
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1553,8 +1553,8 @@ NEPALI-SPECIFIC GUIDELINES:
    - Dative: लाई (lai)
    - Proper verb conjugations (e.g., जानुहोस्, गर्नुस्, पुग्नुहुनेछ).
 3. Use standard Nepali navigation terminology:
-   - Turn right: दायाँ माेड्नुहाेस्
-   - Turn left: बायाँ माेड्नुहाेस्
+   - Turn right: दायाँ माेड्नुहाेस् - do not use दायाँ मोडिनुहोस्
+   - Turn left: बायाँ माेड्नुहाेस् - do not use बायाँ मोडिनुहोस्
    - Keep left: बायाँतर्फ रहनुहोस्
    - Keep right: दायाँतर्फ रहनुहोस्
    - Exit left: बायाँ निकास लिनुहोस्
