@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.1.5.4
+// @version      1.2.0
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -10,6 +10,8 @@
 // @match        https://app.transifex.com/*/translate/*
 // @match        https://www.transifex.com/*/translate/*
 // @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @connect      raw.githubusercontent.com
 // @run-at       document-idle
 // @downloadURL  https://raw.githubusercontent.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
 // @updateURL    https://raw.githubusercontent.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js
@@ -17,6 +19,50 @@
 /*original author: okrauss and script greasyfork.org/scripts/532223/Transifex%20Translator%20add-on.user.js  */
 /*modified by kid4rm90s to use gemini api key to translate using gemini fast models.*/
 (function() {
+
+// Load toastr CSS and JS from wazeToastr repository
+(function() {
+    console.log('[TXTR] Starting toastr library injection...');
+    
+    // Load toastr CSS from unpkg CDN
+    const toastrCss = document.createElement('link');
+    toastrCss.rel = 'stylesheet';
+    toastrCss.type = 'text/css';
+    toastrCss.href = 'https://unpkg.com/toastr@2.1.4/build/toastr.min.css';
+    toastrCss.onerror = () => console.warn('[TXTR] Failed to load toastr CSS');
+    toastrCss.onload = () => console.log('[TXTR] Toastr CSS loaded successfully');
+    document.head.appendChild(toastrCss);
+
+    // Load toastr JS from unpkg CDN and expose to unsafeWindow for Tampermonkey sandbox
+    const toastrJs = document.createElement('script');
+    toastrJs.async = true;
+    toastrJs.src = 'https://unpkg.com/toastr@2.1.4/build/toastr.min.js';
+    toastrJs.onerror = () => console.warn('[TXTR] Failed to load toastr JS');
+    toastrJs.onload = () => {
+        console.log('[TXTR] Toastr JS loaded successfully');
+        // After load, make toastr accessible across Tampermonkey sandbox boundary
+        setTimeout(() => {
+            if (typeof window.toastr !== 'undefined') {
+                console.log('[TXTR] toastr found in window, copying to unsafeWindow');
+                try {
+                    if (typeof unsafeWindow !== 'undefined') {
+                        unsafeWindow.toastr = window.toastr;
+                        console.log('[TXTR] toastr successfully exposed to unsafeWindow');
+                    }
+                } catch (e) {
+                    console.warn('[TXTR] Could not access unsafeWindow:', e);
+                }
+            }
+            // Also check if available directly in unsafeWindow
+            if (typeof unsafeWindow !== 'undefined' && typeof unsafeWindow.toastr !== 'undefined') {
+                console.log('[TXTR] toastr available in unsafeWindow');
+            }
+        }, 100);
+    };
+    document.head.appendChild(toastrJs);
+    
+    console.log('[TXTR] Toastr library injection complete');
+})();
 
 GM_addStyle(`
 
@@ -309,7 +355,10 @@ TXTR.DiffModern = {
             geminiApiKey: 'txtr_geminiApiKey',
             translationEngine: 'txtr_translationEngine',
             geminiModel: 'txtr_geminiModel',
-            useContextAware: 'txtr_useContextAware'
+            useContextAware: 'txtr_useContextAware',
+            lastUpdateCheckTime: 'txtr_lastUpdateCheckTime',
+            updateMonitorEnabled: 'txtr_updateMonitorEnabled',
+            changelogSeenVersion: 'txtr_changelogSeenVersion'
         },
         get(key) {
             return localStorage.getItem(this.keys[key]);
@@ -323,6 +372,454 @@ TXTR.DiffModern = {
         },
         setJSON(key, obj) {
             this.set(key, JSON.stringify(obj));
+        }
+    };
+
+    // ===========================================================================
+    // TXTR.Changelog - Version history and display
+    // ===========================================================================
+    const SCRIPT_VERSION = GM_info.script.version;
+    const CHANGELOG_ITEMS = [
+        "New: Automatic update checking with notifications",
+        "New: Changelog display showing what's new",
+        "New: Toastr library integration for better notifications",
+        "New: GitHub Issues link for feedback and feature requests",
+        "Improved: Better error handling and fallback mechanisms",
+        "Improved: Dynamic version reading from script header"
+    ];
+
+    function openUnifiedModal(newVersion = null) {
+        try {
+            const CHANGELOG_SEEN_KEY = TXTR.Storage.keys.changelogSeenVersion;
+            localStorage.setItem(CHANGELOG_SEEN_KEY, SCRIPT_VERSION);
+        } catch (e) {
+            console.warn('[TXTR] Failed to mark changelog as seen:', e);
+        }
+
+        // Determine current theme (default: light)
+        const isDarkMode = (typeof TXTR !== 'undefined' && TXTR.Theme && TXTR.Theme.current === 'dark') || 
+                          document.documentElement.classList.contains('txtr-theme-dark') ||
+                          document.body.classList.contains('txtr-theme-dark');
+
+        const lightBg = '#ffffff';
+        const darkBg = '#1b1f23';
+        const lightText = '#1a1a1a';
+        const darkText = '#e6eef7';
+        const lightAlt = '#f8fafb';
+        const darkAlt = '#252a30';
+        const lightBorder = '#e2e8f0';
+        const darkBorder = '#3a3f46';
+
+        const bgColor = isDarkMode ? darkBg : lightBg;
+        const textColor = isDarkMode ? darkText : lightText;
+        const altBg = isDarkMode ? darkAlt : lightAlt;
+        const borderColor = isDarkMode ? darkBorder : lightBorder;
+
+        const modal = document.createElement('div');
+        modal.className = isDarkMode ? 'txtr-modal-dark' : 'txtr-modal-light';
+        modal.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            animation: txtr-modal-popup 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            background: linear-gradient(135deg, ${bgColor} 0%, ${altBg} 100%);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,${isDarkMode ? '0.5' : '0.25'}), 0 0 1px rgba(0,0,0,0.1);
+            max-width: 540px;
+            width: 92%;
+            max-height: 85vh;
+            overflow-y: auto;
+            z-index: 999999;
+            padding: 28px 32px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            color: ${textColor};
+        `;
+
+        // Add animation keyframes
+        if (!document.getElementById('txtr-modal-styles')) {
+            const style = document.createElement('style');
+            style.id = 'txtr-modal-styles';
+            style.textContent = `
+                @keyframes txtr-modal-popup {
+                    from {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.85);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                }
+                .txtr-btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+                }
+                .txtr-btn:active {
+                    transform: translateY(0);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,${isDarkMode ? '0.6' : '0.4'});
+            backdrop-filter: blur(4px);
+            z-index: 999998;
+            animation: txtr-fade-in 0.3s ease-out;
+            @keyframes txtr-fade-in {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+
+        // Define closeHelper BEFORE using it
+        const closeHelper = () => {
+            modal.style.animation = 'none';
+            modal.style.transform = 'translate(-50%, -50%) scale(0.9)';
+            modal.style.opacity = '0';
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.remove();
+                modal.remove();
+            }, 150);
+        };
+
+        // Update banner (if new version available)
+        if (newVersion) {
+            const updateBanner = document.createElement('div');
+            updateBanner.style.cssText = `
+                background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+                border: 1px solid #facc15;
+                border-radius: 12px;
+                padding: 14px 16px;
+                margin-bottom: 20px;
+                color: #713f12;
+                font-size: 13px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                box-shadow: 0 2px 8px rgba(250, 204, 21, 0.2);
+            `;
+            updateBanner.innerHTML = `<span style="font-size: 16px;">🎉</span><span>New version <strong style="color: #92400e;">v${newVersion}</strong> available! (Current: v${SCRIPT_VERSION})</span>`;
+            modal.appendChild(updateBanner);
+        }
+
+        const title = document.createElement('h2');
+        title.textContent = `What's New in v${SCRIPT_VERSION}`;
+        title.style.cssText = `
+            margin: 0 0 6px 0;
+            color: ${isDarkMode ? '#90cafe9' : '#0f4c81'};
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        `;
+        modal.appendChild(title);
+
+        const subtitle = document.createElement('p');
+        subtitle.textContent = `Transifex Translator add-on`;
+        subtitle.style.cssText = `
+            margin: 0 0 18px 0;
+            color: ${isDarkMode ? '#94a3b8' : '#64748b'};
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        `;
+        modal.appendChild(subtitle);
+
+        const list = document.createElement('ul');
+        list.style.cssText = `
+            margin: 0 0 20px 0;
+            padding-left: 22px;
+            line-height: 1.8;
+            list-style: none;
+        `;
+        
+        CHANGELOG_ITEMS.forEach(item => {
+            const li = document.createElement('li');
+            li.style.cssText = `
+                margin-bottom: 10px;
+                color: ${isDarkMode ? '#cbd5e1' : '#334155'};
+                font-size: 13px;
+                padding-left: 6px;
+                position: relative;
+                font-weight: 500;
+            `;
+            li.innerHTML = `<span style="position: absolute; left: -18px; color: ${isDarkMode ? '#90cafe9' : '#0f4c81'}; font-weight: 700;">•</span>${item}`;
+            list.appendChild(li);
+        });
+        modal.appendChild(list);
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.style.cssText = `
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid ${borderColor};
+        `;
+
+        // Helper to create styled buttons with theme support
+        const createButton = (text, bgColor, hoverColor, onClick) => {
+            const btn = document.createElement('button');
+            btn.className = 'txtr-btn';
+            btn.textContent = text;
+            btn.style.cssText = `
+                padding: 10px 18px;
+                background: ${bgColor};
+                color: white;
+                border: ${isDarkMode ? '1px solid rgba(255,255,255,0.1)' : 'none'};
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                outline: none;
+                box-shadow: 0 2px 6px ${isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'};
+                white-space: nowrap;
+            `;
+            btn.onmouseover = () => {
+                btn.style.background = hoverColor;
+                btn.style.boxShadow = `0 4px 12px ${isDarkMode ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)'}`;
+                btn.style.transform = 'translateY(-1px)';
+            };
+            btn.onmouseout = () => {
+                btn.style.background = bgColor;
+                btn.style.boxShadow = `0 2px 6px ${isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)'}`;
+                btn.style.transform = 'translateY(0)';
+            };
+            btn.onclick = onClick;
+            return btn;
+        };
+
+        // GitHub button - Blue
+        const githubBtnBg = isDarkMode ? '#1e40af' : '#0f4c81';
+        const githubBtnHover = isDarkMode ? '#1e3a8a' : '#0d3a5c';
+        const githubBtn = createButton('📖 GitHub', githubBtnBg, githubBtnHover, () => {
+            window.open('https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork', '_blank');
+            closeHelper();
+        });
+        buttonsDiv.appendChild(githubBtn);
+
+        // Download button (if update available)
+        if (newVersion) {
+            const downloadBtnBg = isDarkMode ? '#15803d' : '#16a34a';
+            const downloadBtnHover = isDarkMode ? '#166534' : '#15803d';
+            const downloadBtn = createButton('⬇️ Download', downloadBtnBg, downloadBtnHover, () => {
+                window.open(TXTR.UpdateMonitor.downloadUrl, '_blank');
+                closeHelper();
+            });
+            buttonsDiv.appendChild(downloadBtn);
+        }
+
+        // Feedback button
+        const feedbackBtnBg = isDarkMode ? '#4f46e5' : '#6366f1';
+        const feedbackBtnHover = isDarkMode ? '#4338ca' : '#4f46e5';
+        const feedbackBtn = createButton('💬 Feedback', feedbackBtnBg, feedbackBtnHover, () => {
+            window.open('https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/issues', '_blank');
+            closeHelper();
+        });
+        buttonsDiv.appendChild(feedbackBtn);
+
+        // Close button
+        const closeBtnBg = isDarkMode ? '#475569' : '#e2e8f0';
+        const closeBtnText = isDarkMode ? '#e2e8f0' : '#334155';
+        const closeBtnHover = isDarkMode ? '#64748b' : '#cbd5e1';
+        const okBtn = document.createElement('button');
+        okBtn.className = 'txtr-btn';
+        okBtn.textContent = '✕ Close';
+        okBtn.style.cssText = `
+            padding: 10px 18px;
+            background: ${closeBtnBg};
+            color: ${closeBtnText};
+            border: ${isDarkMode ? '1px solid rgba(255,255,255,0.1)' : 'none'};
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            outline: none;
+            box-shadow: 0 2px 6px ${isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)'};
+        `;
+        okBtn.onmouseover = () => {
+            okBtn.style.background = closeBtnHover;
+            okBtn.style.boxShadow = `0 4px 12px ${isDarkMode ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.1)'}`;
+            okBtn.style.transform = 'translateY(-1px)';
+        };
+        okBtn.onmouseout = () => {
+            okBtn.style.background = closeBtnBg;
+            okBtn.style.boxShadow = `0 2px 6px ${isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)'}`;
+            okBtn.style.transform = 'translateY(0)';
+        };
+        okBtn.onclick = closeHelper;
+        buttonsDiv.appendChild(okBtn);
+        
+        modal.appendChild(buttonsDiv);
+
+        overlay.onclick = closeHelper;
+        document.body.appendChild(overlay);
+        document.body.appendChild(modal);
+        
+        // Calculate displayed content
+        const changelogItemCount = CHANGELOG_ITEMS.length;
+        const buttonCount = newVersion ? 4 : 3; // GitHub, (Download), Feedback, Close
+        const hasUpdateBanner = newVersion ? true : false;
+        
+        // Log modal display with details
+        const displayType = newVersion ? 'update + changelog' : 'changelog';
+        const versionInfo = newVersion ? `(v${SCRIPT_VERSION} → v${newVersion})` : `(v${SCRIPT_VERSION})`;
+        const themeMode = isDarkMode ? 'dark' : 'light';
+        console.log(`[TXTR] Modal displayed: ${displayType} ${versionInfo} [${themeMode}]`);
+        console.log(`[TXTR]   ├─ Changelog items: ${changelogItemCount}`);
+        console.log(`[TXTR]   ├─ Update banner: ${hasUpdateBanner ? 'yes' : 'no'}`);
+        console.log(`[TXTR]   └─ Buttons: ${buttonCount} (GitHub, ${newVersion ? 'Download, ' : ''}Feedback, Close)`);
+    }
+
+    function maybeShowChangelogOnce() {
+        try {
+            const CHANGELOG_SEEN_KEY = TXTR.Storage.keys.changelogSeenVersion;
+            const seenVersion = localStorage.getItem(CHANGELOG_SEEN_KEY);
+            
+            // Only return true if this version hasn't been seen yet
+            // We'll show the modal from the update monitor instead
+            return seenVersion !== SCRIPT_VERSION;
+        } catch (e) {
+            console.warn('[TXTR] Failed to check changelog status:', e);
+            return true;
+        }
+    }
+
+    // ===========================================================================
+    // TXTR.UpdateMonitor - Script update checking (similar to wazeToastr)
+    // ===========================================================================
+    TXTR.UpdateMonitor = {
+        scriptName: 'Transifex Translator add-on',
+        currentVersion: GM_info.script.version,  // Read actual version from script header
+        downloadUrl: 'https://raw.githubusercontent.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js',
+        checkIntervalHours: 24,
+        monitorInterval: null,
+        metaUrl: 'https://raw.githubusercontent.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/main/Transifex-Translator-add-on-kid4rm90s-fork.user.js',
+        metaRegExp: /@version\s+(.+)/i,
+        forumUrl: 'https://github.com/kid4rm90s/Transifex-Translator-add-on-kid4rm90s-fork/issues',
+        updateMessage: `<strong>New Version Available!</strong><br>Check the GitHub issues page for details and feedback.`,
+        hasInitialized: false,
+
+        init() {
+            // Check if monitoring is enabled (default: true)
+            const enableMonitoring = TXTR.Storage.get('updateMonitorEnabled') !== 'false';
+            if (!enableMonitoring) return;
+
+            // Check immediately on first load (bypass throttle)
+            this.hasInitialized = true;
+            this.check(true);
+
+            // Set up periodic checks
+            this.start();
+        },
+
+        start() {
+            if (this.monitorInterval) clearInterval(this.monitorInterval);
+            
+            // Check every 24 hours (in milliseconds)
+            const intervalMs = this.checkIntervalHours * 60 * 60 * 1000;
+            this.monitorInterval = setInterval(() => this.check(false), intervalMs);
+            
+            console.log(`[TXTR] Update monitor started: checking every ${this.checkIntervalHours} hours`);
+        },
+
+        stop() {
+            if (this.monitorInterval) {
+                clearInterval(this.monitorInterval);
+                this.monitorInterval = null;
+            }
+        },
+
+        check(isInitial = false) {
+            const lastCheckTime = parseInt(TXTR.Storage.get('lastUpdateCheckTime') || '0', 10);
+            const now = Date.now();
+            const checkIntervalMs = this.checkIntervalHours * 60 * 60 * 1000;
+
+            // Don't check too frequently (within 1 hour minimum), but allow on initialization
+            if (!isInitial && lastCheckTime !== 0 && now - lastCheckTime < 3600000) {
+                console.log('[TXTR] Skipping update check (too soon)');
+                return;
+            }
+
+            TXTR.Storage.set('lastUpdateCheckTime', String(now));
+
+            GM_xmlhttpRequest({
+                method: 'GET',
+                url: this.metaUrl,
+                timeout: 10000,
+                onload: (response) => this.handleCheckResponse(response),
+                onerror: (error) => {
+                    console.warn('[TXTR] Update check failed:', error);
+                },
+                ontimeout: () => {
+                    console.warn('[TXTR] Update check timed out');
+                }
+            });
+        },
+
+        handleCheckResponse(response) {
+            try {
+                if (response.status !== 200) {
+                    console.warn(`[TXTR] Update check failed with status ${response.status}`);
+                    return;
+                }
+
+                const match = response.responseText.match(this.metaRegExp);
+                if (!match || !match[1]) {
+                    console.warn('[TXTR] Could not find version in metadata');
+                    return;
+                }
+
+                const remoteVersion = match[1].trim();
+                const currentVersion = this.currentVersion.trim();
+                const comparisonResult = this.compareVersions(remoteVersion, currentVersion);
+
+                console.log(`[TXTR] Version comparison: remote=${remoteVersion}, current=${currentVersion}, result=${comparisonResult}`);
+
+                let newVersionAvailable = null;
+                if (comparisonResult > 0) {
+                    console.log(`[TXTR] Update available: ${remoteVersion} (current: ${currentVersion})`);
+                    newVersionAvailable = remoteVersion;
+                } else {
+                    console.log(`[TXTR] Already on latest version: ${currentVersion}`);
+                }
+                
+                // Show single unified modal with or without update
+                console.log('[TXTR] Showing unified modal (update check complete)');
+                setTimeout(() => openUnifiedModal(newVersionAvailable), 800);
+            } catch (error) {
+                console.error('[TXTR] Error processing update check:', error);
+            }
+        },
+
+        compareVersions(v1, v2) {
+            // Simple semantic versioning comparison: returns 1 if v1 > v2, -1 if v1 < v2, 0 if equal
+            const parts1 = v1.split('.').map(p => parseInt(p, 10) || 0);
+            const parts2 = v2.split('.').map(p => parseInt(p, 10) || 0);
+            const maxLength = Math.max(parts1.length, parts2.length);
+
+            for (let i = 0; i < maxLength; i++) {
+                const part1 = parts1[i] || 0;
+                const part2 = parts2[i] || 0;
+
+                if (part1 > part2) return 1;
+                if (part1 < part2) return -1;
+            }
+            return 0;
         }
     };
 
@@ -4209,6 +4706,9 @@ this.injectUI(ui);
             // Initial UI update
             TXTR.UI.updateAllLabels();
             TXTR.Diff.updateVisibility();
+
+            // Start update monitor (checks for script updates)
+            TXTR.UpdateMonitor.init();
         },
 
         injectUI(ui) {
@@ -4578,6 +5078,8 @@ GM_addStyle(`
     // Initialize
     // ===========================================================================
     TXTR.Loader.init();
+    
+    // Modal will be shown by update monitor after checking for updates
 
 // ===========================================================================
 // TXTR Dropdown Chevron Manager (inside menu, sticky)
