@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.2.1
+// @version      1.2.2
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -382,7 +382,7 @@ TXTR.DiffModern = {
     const CHANGELOG_ITEMS = [
         "New: Automatic update checking with notifications",
         "New: Changelog display showing what's new",
-        "Improved: Better error handling and fallback mechanisms",
+        "Improved: No more recurring changelog popups once seen",
         "Improved: Dynamic version reading from script header"
     ];
 
@@ -796,9 +796,13 @@ TXTR.DiffModern = {
                     console.log(`[TXTR] Already on latest version: ${currentVersion}`);
                 }
                 
-                // Show single unified modal with or without update
-                console.log('[TXTR] Showing unified modal (update check complete)');
-                setTimeout(() => openUnifiedModal(newVersionAvailable), 800);
+                // Only show modal if there's an update OR if this version hasn't been seen yet
+                if (maybeShowChangelogOnce() || newVersionAvailable) {
+                    console.log('[TXTR] Showing unified modal (update check complete)');
+                    setTimeout(() => openUnifiedModal(newVersionAvailable), 800);
+                } else {
+                    console.log('[TXTR] Skipping modal: version already seen and no update available');
+                }
             } catch (error) {
                 console.error('[TXTR] Error processing update check:', error);
             }
@@ -3683,77 +3687,77 @@ scrollArea.appendChild(diffModernContainer);
 
 
 // === What's New Popup ===
-(function(){
-    const key = 'txtr_whatsnew_shown_' + SCRIPT_VERSION;
-    if(!localStorage.getItem(key)){
-        const popup=document.createElement('div');
-        popup.className='txtr-whatsnew-popup';
-        popup.style.cssText='position:absolute;top:50px;left:20px;right:20px;background:#fff;border:1px solid #ccc;padding:12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);z-index:9999;font-size:14px;';
+// (function(){
+//     const key = 'txtr_whatsnew_shown_' + SCRIPT_VERSION;
+//     if(!localStorage.getItem(key)){
+//         const popup=document.createElement('div');
+//         popup.className='txtr-whatsnew-popup';
+//         popup.style.cssText='position:absolute;top:50px;left:20px;right:20px;background:#fff;border:1px solid #ccc;padding:12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);z-index:9999;font-size:14px;';
 
-        popup.innerHTML = `
-<div style="font-weight:600;font-size:15px;margin-bottom:6px;">What's New</div>
+//         popup.innerHTML = `
+// <div style="font-weight:600;font-size:15px;margin-bottom:6px;">What's New</div>
 
-<ul style="margin:0 0 10px 18px;padding:0;">
-<li><b>Improved UI Layout:</b> switch between Full Mode and Compact Mode</li>
-<li><b>Modern Diff section:</b> toggle comparison view</li>
-<li><b>Additional UI languages:</b> French, Portuguese, German, Turkish, Filipino and more</li>
-<li><b>Enhanced drag & flexible resize</b></li>
-</ul>
+// <ul style="margin:0 0 10px 18px;padding:0;">
+// <li><b>Improved UI Layout:</b> switch between Full Mode and Compact Mode</li>
+// <li><b>Modern Diff section:</b> toggle comparison view</li>
+// <li><b>Additional UI languages:</b> French, Portuguese, German, Turkish, Filipino and more</li>
+// <li><b>Enhanced drag & flexible resize</b></li>
+// </ul>
 
-<div style="font-weight:600;font-size:14px;margin:12px 0 4px 0;">Known Issues:</div>
+// <div style="font-weight:600;font-size:14px;margin:12px 0 4px 0;">Known Issues:</div>
 
-<ul style="margin:0 0 10px 18px;padding:0;">
-<li><b>Transifex escaping:</b> Some characters (like <code>&lt;&lt;</code> <code>&gt;&gt;</code> <code>&lt;tag&gt;</code> <code>&amp;</code>) may appear encoded when inserted automatically via the add-on. This is a Transifex limitation (WAD).</li>
-<li><b>UI drag latency:</b> Slight drag delay may occur in some environments.</li>
-</ul>
+// <ul style="margin:0 0 10px 18px;padding:0;">
+// <li><b>Transifex escaping:</b> Some characters (like <code>&lt;&lt;</code> <code>&gt;&gt;</code> <code>&lt;tag&gt;</code> <code>&amp;</code>) may appear encoded when inserted automatically via the add-on. This is a Transifex limitation (WAD).</li>
+// <li><b>UI drag latency:</b> Slight drag delay may occur in some environments.</li>
+// </ul>
 
-<button class="txtr-whatsnew-ok" style="padding:6px 12px;border:1px solid #888;border-radius:6px;background:#eaeaea;cursor:pointer;margin-top:10px;">
-Great!
-</button>
-`;
+// <button class="txtr-whatsnew-ok" style="padding:6px 12px;border:1px solid #888;border-radius:6px;background:#eaeaea;cursor:pointer;margin-top:10px;">
+// Great!
+// </button>
+// `;
 
-        ui.appendChild(popup);
+//         ui.appendChild(popup);
 
-        popup.querySelector('.txtr-whatsnew-ok').onclick = () => {
-            popup.remove();
-            localStorage.setItem(key,'1');
-        };
-    }
-// ===========================================================================
-// TXTR Dropdown Chevron Manager (inside menu, sticky)
-// ===========================================================================
-(function(){
-  function ensureChevron(menu){
-    if (!menu) return;
+//         popup.querySelector('.txtr-whatsnew-ok').onclick = () => {
+//             popup.remove();
+//             localStorage.setItem(key,'1');
+//         };
+//     }
+// // ===========================================================================
+// // TXTR Dropdown Chevron Manager (inside menu, sticky)
+// // ===========================================================================
+// (function(){
+//   function ensureChevron(menu){
+//     if (!menu) return;
 
-    let chev = menu.querySelector('.txtr-dropdown-chevron');
-    if (!chev) {
-      chev = document.createElement('div');
-      chev.className = 'txtr-dropdown-chevron';
-      chev.textContent = '⌄';
-      menu.appendChild(chev);
-    }
+//     let chev = menu.querySelector('.txtr-dropdown-chevron');
+//     if (!chev) {
+//       chev = document.createElement('div');
+//       chev.className = 'txtr-dropdown-chevron';
+//       chev.textContent = '⌄';
+//       menu.appendChild(chev);
+//     }
 
-    const update = () => {
-      const hasOverflow = menu.scrollHeight > menu.clientHeight + 1;
-      chev.style.display = hasOverflow ? 'block' : 'none';
-    };
+//     const update = () => {
+//       const hasOverflow = menu.scrollHeight > menu.clientHeight + 1;
+//       chev.style.display = hasOverflow ? 'block' : 'none';
+//     };
 
-    update();
-    menu.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-  }
+//     update();
+//     menu.addEventListener('scroll', update, { passive: true });
+//     window.addEventListener('resize', update);
+//   }
 
-  const obs = new MutationObserver(() => {
-    document.querySelectorAll('.txtr-dropdown-menu').forEach(menu => {
-      ensureChevron(menu);
-    });
-  });
+//   const obs = new MutationObserver(() => {
+//     document.querySelectorAll('.txtr-dropdown-menu').forEach(menu => {
+//       ensureChevron(menu);
+//     });
+//   });
 
-  obs.observe(document.body, { childList: true, subtree: true });
-})();
+//   obs.observe(document.body, { childList: true, subtree: true });
+// })();
 
-})();
+// })();
 
 
 // === Version Label ===
