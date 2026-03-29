@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -382,8 +382,6 @@ TXTR.DiffModern = {
     const CHANGELOG_ITEMS = [
         "New: Automatic update checking with notifications",
         "New: Changelog display showing what's new",
-        "New: Toastr library integration for better notifications",
-        "New: GitHub Issues link for feedback and feature requests",
         "Improved: Better error handling and fallback mechanisms",
         "Improved: Dynamic version reading from script header"
     ];
@@ -3686,7 +3684,7 @@ scrollArea.appendChild(diffModernContainer);
 
 // === What's New Popup ===
 (function(){
-    const key='txtr_whatsnew_shown_3_0_1';
+    const key = 'txtr_whatsnew_shown_' + SCRIPT_VERSION;
     if(!localStorage.getItem(key)){
         const popup=document.createElement('div');
         popup.className='txtr-whatsnew-popup';
