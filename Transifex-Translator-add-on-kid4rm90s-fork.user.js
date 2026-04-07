@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.2.5
+// @version      1.2.7
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -1883,10 +1883,14 @@ TXTR.DiffModern = {
 
         // Token patterns for preserving placeholders (from v2.17)
         TOKEN_PATTERNS: {
-            BBCODE: /\[\/?(?:link|b|i|u|\/?id=\d*)?\]|<\/?br\/?>/gi,
-            PERCENT: /%[a-zA-Z0-9_]+%|%s/g,
-            ANGLE: /<[^>]+>/g,
-            UNDERSCORE: /_(?:p|ph|ph\d+)_/gi
+            BBCODE: /\[\/?(?:link|b|i|u|\/?id=\d*)?\]|<\/?br\/?>/i,
+            DOUBLE_CURLY: /\{\{[^{}]+\}\}/,
+            PYTHON_PRINTF: /%\([a-zA-Z0-9_]+\)[#0 +\-]?(?:\d+|\*)?(?:\.(?:\d+|\*))?[bcdeEfFgGnosxX]/,
+            BRACE: /\{[^{}]+\}/,
+            PERCENT: /%[a-zA-Z0-9_]+%/,
+            PERCENT_BRACE: /%\{[^{}]+\}/,
+            ANGLE: /<[^>]+>/,
+            UNDERSCORE: /_(?:p|ph|ph\d+)_/i
         },
 
         MASTER_TOKEN: null,
@@ -1971,17 +1975,19 @@ TXTR.DiffModern = {
         },
 
         // BUGFIX: sanitize translation artifacts (e.g., literal '&nbsp;' and ghost numbering like ", 1Taxi")
-        sanitizeText(input) {
+        sanitizeText(input, options = {}) {
             if (input == null) return '';
             let s = String(input);
-
-            // Decode literal entities that may leak as plain text
-            s = s.replace(/&nbsp;/gi, ' ')
-                 .replace(/&amp;/gi, '&')
-                 .replace(/&lt;/gi, '<')
-                 .replace(/&gt;/gi, '>')
-                 .replace(/&#39;/g, "'")
-                 .replace(/&quot;/g, '"');
+            const decodeEntities = options.decodeEntities !== false;
+            if (decodeEntities) {
+                // Decode literal entities that may leak as plain text
+                s = s.replace(/&nbsp;/gi, ' ')
+                     .replace(/&amp;/gi, '&')
+                     .replace(/&lt;/gi, '<')
+                     .replace(/&gt;/gi, '>')
+                     .replace(/&#39;/g, "'")
+                     .replace(/&quot;/g, '"');
+            }
 
             // Normalize NBSP
             s = s.replace(/\u00A0/g, ' ');
@@ -2097,6 +2103,7 @@ NEPALI-SPECIFIC GUIDELINES:
    - Junction Box or जंक्शन बक्स: डबली बाकस - do NOT use जंक्शन बक्स
    - merge or मर्ज: गाभ्नु - do not use मर्ज गर्नु
    - Gas Station or ग्यास स्टेशन: पेट्रोल पम्प - do NOT use ग्यास स्टेशन
+   - Road shield or Roadshield: सडक ढाल - do not use रोडसिल्ड or रोड सिल्ड or सडक चिन्ह
 4. CRITICAL: NEVER include the English source word in parentheses within the translation. For example, translate "Location" as "स्थान", NOT "स्थान (location)".
 5. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 6. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
@@ -2792,7 +2799,7 @@ Return ONLY the translation.`;
             if (!srcEl || !tgtEl) return;
 
             // Extract text with placeholder expansion using helper
-            const srcText = this.sanitizeText(this.extractSourceText(srcEl).trim());
+            const srcText = this.sanitizeText(srcEl.innerText?.trim() || srcEl.textContent?.trim() || '', { decodeEntities: false });
             if (!srcText) return;
 
             // Skip if extracted text hasn't actually changed (prevents retranslation for DOM-only mutations)
