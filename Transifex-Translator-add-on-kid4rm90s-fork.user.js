@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transifex Translator add-on (kid4rm90s fork)
 // @namespace    http://tampermonkey.net/
-// @version      1.2.7
+// @version      1.2.8
 // @description  Advanced Automatic Transifex translator
 // @icon        data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCI+CiAgPHRleHQgeD0iNTAlIiB5PSIyOCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiCiAgICAgIGZvbnQtZmFtaWx5PSJJbnRlciwgQXJpYWwsIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPkE8L3RleHQ+Cgk8dGV4dCB4PSI1MCUiIHk9IjcyJSIgdGV4dC1hbmNob3I9Im1pZGRsZSIKICAgICAgZm9udC1mYW1pbHk9Ik5vdG8gU2FucyBDSksgSlAsIE5vdG8gU2FucyBTQywgIHNhbnMtc2VyaWYiCiAgICAgIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiMxNTY1YzAiIGZvbnQtd2VpZ2h0PSI3MDAiPuW3qTwvdGV4dD4KPC9zdmc+
 // @author       okrauss
@@ -2104,6 +2104,8 @@ NEPALI-SPECIFIC GUIDELINES:
    - merge or मर्ज: गाभ्नु - do not use मर्ज गर्नु
    - Gas Station or ग्यास स्टेशन: पेट्रोल पम्प - do NOT use ग्यास स्टेशन
    - Road shield or Roadshield: सडक ढाल - do not use रोडसिल्ड or रोड सिल्ड or सडक चिन्ह
+   - Category: वर्ग - do NOT use श्रेणी, use श्रेणी for rank only
+   - Delete: use मेट्नुहोस् - do NOT use मेटाउनुहोस् or डिलिट or हटाउनुहोस्
 4. CRITICAL: NEVER include the English source word in parentheses within the translation. For example, translate "Location" as "स्थान", NOT "स्थान (location)".
 5. Preserve original meaning and conciseness - navigation prompts should be clear and brief. Try to translate precisely with less words.
 6. You MUST translate and transliterate technical terms found INSIDE tags (e.g., "<b>Settings</b>" -> "<b>सेटिङस्</b>").
